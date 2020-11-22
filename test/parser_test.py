@@ -7,8 +7,8 @@ from mcsv.parser import get_interpreter
 
 class ParserTest(unittest.TestCase):
     def test(self):
-        reader = get_interpreter("fixtures/meta_csv.mcsv").dict_reader(
-            "fixtures/meta_csv.mcsv", False)
+        reader = get_interpreter("test/fixtures/meta_csv.mcsv").dict_reader(
+            "test/fixtures/meta_csv.mcsv", False)
         self.assertEqual({'domain': 'text', 'key': 'text', 'value': 'text'},
                          next(reader))
         self.assertEqual(
@@ -17,8 +17,8 @@ class ParserTest(unittest.TestCase):
 
     def test2(self):
         reader = get_interpreter(
-            "fixtures/20201001-bal-216402149.mcsv").dict_reader(
-            "fixtures/20201001-bal-216402149.csv", False)
+            "test/fixtures/20201001-bal-216402149.mcsv").dict_reader(
+            "test/fixtures/20201001-bal-216402149.csv", False)
         self.assertEqual({'cle_interop': 'text',
                           'commune_nom': 'text',
                           'complement': 'text',

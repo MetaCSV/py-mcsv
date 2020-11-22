@@ -1,0 +1,40 @@
+import unittest
+
+from mcsv.date_format_converter import _DateFormatParser, Token, OpCode
+
+
+class DateFormatConverterTest(unittest.TestCase):
+    def test_lex_iso(self):
+        self.assertEqual([
+            Token(OpCode.FIELD, 'yyyy'), Token(OpCode.TEXT, '-'),
+            Token(OpCode.FIELD, 'MM'), Token(OpCode.TEXT, '-'),
+            Token(OpCode.FIELD, 'dd'), Token(OpCode.TEXT, 'T'),
+            Token(OpCode.FIELD, 'HH'), Token(OpCode.TEXT, ':'),
+            Token(OpCode.FIELD, 'mm'), Token(OpCode.TEXT, ':'),
+            Token(OpCode.FIELD, 'ss'), Token(OpCode.TEXT, ','),
+            Token(OpCode.FIELD, 'SSSS'), Token(OpCode.FIELD, 'Z')],
+            list(_DateFormatParser.lex("yyyy-MM-dd'T'HH:mm:ss,SSSSZ")))
+
+    def test_lex_quote(self):
+        self.assertEqual(
+            [Token(OpCode.TEXT, "'"), Token(OpCode.FIELD, 'yy'),
+             Token(OpCode.TEXT, '/'), Token(OpCode.FIELD, 'MM'),
+             Token(OpCode.TEXT, '/'), Token(OpCode.FIELD, 'dd')],
+            list(_DateFormatParser.lex("''yy/MM/dd")))
+
+    def test_parse_iso(self):
+        self.assertEqual("%Y-%m-%dT%H:%M:%S,%f%Z",
+                         _DateFormatParser.create().parse(
+                             "yyyy-MM-dd'T'HH:mm:ss,SSSSZ"))
+
+    def test_parse_quote(self):
+        self.assertEqual("'%y/%m/%d",
+                         _DateFormatParser.create().parse("''yy/MM/dd"))
+
+    def test_parse_percent(self):
+        self.assertEqual("%y%%%m%%%d",
+                         _DateFormatParser.create().parse("yy%MM%dd"))
+
+
+if __name__ == '__main__':
+    unittest.main()

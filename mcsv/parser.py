@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import csv
 import logging
 from datetime import datetime
@@ -9,36 +11,11 @@ from typing import (Union, List, Mapping, Callable, Any, Iterator, Optional,
                     TypeVar)
 from pathlib import Path
 import collections
-import re
 
-ULDML_TO_C1989 = {
-    r'dd': '%d',
-    r'd': '%d',
-    r'MM': '%m',
-    r'M': '%m',
-    r'yyyy': '%Y',
-    r'yy': '%Y',
-    r'HH': '%H',
-    r'mm': '%M',
-    r'MMM': '%b',
-}
+from mcsv.date_format_converter import _DateFormatParser
+from mcsv.util import split_parameters
 
-pattern = r'\b(' + '|'.join(re.escape(k) for k in ULDML_TO_C1989) + r')\b'
-regex = re.compile(pattern)
-
-
-def replace(match):
-    return ULDML_TO_C1989[match.group()]
-
-
-def uldml_to_c1989_format(text):
-    """
-    See https://stackoverflow.com/a/16735620/6914441
-
-    :param text: some unicode LDML format
-    :return: some 1989 C format.
-    """
-    return re.sub(regex, replace, text)
+parser = _DateFormatParser.create()
 
 
 N = TypeVar('N', bound=Number)
@@ -159,7 +136,7 @@ class MetaCSVParser:
 
     def _parse_data_row(self, key, value):
         n = self._get_col_num(key)
-        datatype, *parameters = value.split("/")
+        datatype, *parameters = split_parameters(value)
         func = None
         if datatype == "bool":
             func = self._parse_data_bool_row(parameters)
@@ -267,7 +244,8 @@ class MetaCSVParser:
                              ) -> Callable[[str], Optional[datetime]]:
         if len(parameters) == 1:
             uldml_date_format, = parameters
-            c1989_date_format = uldml_to_c1989_format(uldml_date_format)
+            c1989_date_format = parser.parse(uldml_date_format)
+
             def func(w: str) -> Optional[datetime]:
                 try:
                     return strptime(w, c1989_date_format)
@@ -277,7 +255,8 @@ class MetaCSVParser:
             uldml_date_format, locale_name = parameters
             if "." not in locale_name:
                 locale_name += "UTF-8"
-            c1989_date_format = uldml_to_c1989_format(uldml_date_format)
+            c1989_date_format = parser.parse(uldml_date_format)
+
             def func(w: str) -> Optional[datetime]:
                 try:
                     oldlocale = getlocale(LC_TIME)
@@ -334,7 +313,7 @@ class MetaCSVParser:
 
     def parse_data_percentage_row(self, parameters) -> Callable[[str], Decimal]:
         func = self._parse_data_currency_row(parameters)
-        return lambda w: func(w)/100
+        return lambda w: func(w) / 100
 
 
 def get_interpreter(meta_path: Union[str, Path] = None, strict: bool = False,
