@@ -21,13 +21,15 @@ have an appropriate MetaCSV file.
 generate automatically a sensible MetaCSV file for a given CSV file.)  
 
 # Example
-Here's a basic example. The `example.csv` file reads: 
+Here's a basic example. The `example.csv` file reads (encoding: utf-8, 
+newline: CRLF): 
 
     name,date,count
     foo,2020-11-21,15
     foo,2020-11-22,-8
 
-The `example.mcsv` file reads (see the [MetaCSV format specification](https://github.com/jferard/MetaCSV#full-specification-draft-0):
+The `example.mcsv` file reads (encoding: utf-8, 
+newline: CRLF, see the [MetaCSV format specification](https://github.com/jferard/MetaCSV#full-specification-draft-0)):
 
     domain,key,value
     data,col/1/type,date/YYYY-MM-dd
