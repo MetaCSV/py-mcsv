@@ -19,14 +19,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
+import io
 import logging
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from locale import getlocale, LC_TIME, setlocale, Error
 from numbers import Number
-from time import strptime
+from time import strptime, mktime
 from typing import (Union, List, Mapping, Callable, Any, Iterator, Optional,
-                    TypeVar)
+                    TypeVar, BinaryIO, TextIO)
 from pathlib import Path
 import collections
 
@@ -34,7 +35,6 @@ from mcsv.date_format_converter import _DateFormatParser
 from mcsv.util import split_parameters
 
 parser = _DateFormatParser.create()
-
 
 N = TypeVar('N', bound=Number)
 
@@ -61,20 +61,27 @@ class CSVInterpreter:
         self._dialect = dialect
         self._converter_by_col_index = converter_by_col_index
 
-    def reader(self, path: Union[str, Path], skip_types: bool = True
+    def reader(self, path: Union[str, Path, BinaryIO], skip_types: bool = True
                ) -> Iterator[List[Any]]:
-        with open(path, "r", encoding=self._encoding) as source:
-            reader = csv.reader(source, self._dialect)
-            header = next(reader)
-            yield header
-            if not skip_types:
-                yield [self._converter_by_col_index[
-                           i].datatype if i in self._converter_by_col_index else "text"
-                       for i in range(len(header))]
-            for row in reader:
-                yield [self._converter_by_col_index[i].func(
-                    v) if i in self._converter_by_col_index else v for i, v in
-                       enumerate(row)]
+        if isinstance(path, (str, Path)):
+            with open(path, "r", encoding=self._encoding) as source:
+                yield from self._reader(source, skip_types)
+        else:
+            yield from self._reader(
+                io.TextIOWrapper(path, encoding=self._encoding), skip_types)
+
+    def _reader(self, source, skip_types):
+        reader = csv.reader(source, self._dialect)
+        header = next(reader)
+        yield header
+        if not skip_types:
+            yield [self._converter_by_col_index[i].datatype
+                   if i in self._converter_by_col_index else "text"
+                   for i in range(len(header))]
+        for row in reader:
+            yield [self._converter_by_col_index[i].func(
+                v) if i in self._converter_by_col_index else v for i, v in
+                   enumerate(row)]
 
     def dict_reader(self, path: Union[str, Path], skip_types: bool = True
                     ) -> Iterator[Mapping[str, Any]]:
@@ -94,7 +101,8 @@ CSVInterpreter.DEFAULT = CSVInterpreter("utf-8", RFC4180_DIALECT, {})
 
 
 class MetaCSVParser:
-    def __init__(self, meta_path: Union[str, Path], strict: bool = False):
+    def __init__(self, meta_path: Union[str, Path, BinaryIO, TextIO],
+                 strict: bool = False):
         self._meta_path = meta_path
         self._strict = strict
         self._logger = logging.getLogger("py-mcsv")
@@ -103,18 +111,29 @@ class MetaCSVParser:
         self._converter_by_col_index = {}
 
     def parse(self) -> CSVInterpreter:
-        with open(self._meta_path, "r", encoding="utf-8") as source:
-            reader = csv.reader(source, RFC4180_DIALECT)
-            header = next(reader)
-            if header != ["domain", "key", "value"]:
-                raise ValueError(
-                    f"Bad file header, expected: [\"domain\", \"key\", \"value\"], was {header}")
-
-            for row in reader:
-                self._parse_row(row)
+        if isinstance(self._meta_path, (str, Path)):
+            with open(self._meta_path, "r", encoding="utf-8") as source:
+                self._parse_source(source)
+        elif isinstance(self._meta_path, io.TextIOBase):
+            self._parse_source(self._meta_path)
+        elif isinstance(self._meta_path, (io.RawIOBase, io.BufferedIOBase)):
+            self._parse_source(
+                io.TextIOWrapper(self._meta_path, encoding="utf-8"))
+        else:
+            raise TypeError(
+                f"meta_path {self._meta_path} ({type(self._meta_path)})")
 
         return CSVInterpreter(self._encoding, self._dialect,
                               self._converter_by_col_index)
+
+    def _parse_source(self, source):
+        reader = csv.reader(source, RFC4180_DIALECT)
+        header = next(reader)
+        if header != ["domain", "key", "value"]:
+            raise ValueError(
+                f"Bad file header, expected: [\"domain\", \"key\", \"value\"], was {header}")
+        for row in reader:
+            self._parse_row(row)
 
     def _parse_row(self, row: List[str]):
         domain, key, value = row
@@ -259,14 +278,30 @@ class MetaCSVParser:
             raise ValueError()
 
     def _parse_data_date_row(self, parameters
-                             ) -> Callable[[str], Optional[datetime]]:
+                             ) -> Callable[[str], Optional[date]]:
+        def parse_date(w, c1989_date_format):
+            return date.fromtimestamp(
+                mktime(strptime(w, c1989_date_format)))
+
+        return self._parse_data_date_or_datetime_row(parameters, parse_date)
+
+    def _parse_data_datetime_row(self, parameters
+                                 ) -> Callable[[str], Optional[datetime]]:
+        def parse_datetime(w, c1989_date_format):
+            return datetime.fromtimestamp(
+                mktime(strptime(w, c1989_date_format)))
+
+        return self._parse_data_date_or_datetime_row(parameters, parse_datetime)
+
+    def _parse_data_date_or_datetime_row(self, parameters,
+                                         parse_date_or_datetime):
         if len(parameters) == 1:
             uldml_date_format, = parameters
             c1989_date_format = parser.parse(uldml_date_format)
 
             def func(w: str) -> Optional[datetime]:
                 try:
-                    return strptime(w, c1989_date_format)
+                    return parse_date_or_datetime(w, c1989_date_format)
                 except ValueError as e:
                     return self._warn(str(e))
         elif len(parameters) == 2:
@@ -283,17 +318,13 @@ class MetaCSVParser:
                     oldlocale = None
 
                 try:
-                    return strptime(w, c1989_date_format)
+                    return parse_date_or_datetime(w, c1989_date_format)
                 except ValueError as e:
                     return self._warn(str(e))
                 finally:
                     if oldlocale is not None:
                         setlocale(LC_TIME, oldlocale)
         return func
-
-    def _parse_data_datetime_row(self, parameters
-                                 ) -> Callable[[str], Optional[datetime]]:
-        return self._parse_data_date_row(self, parameters)
 
     def _parse_data_float_row(self, parameters, f: Callable[[str], N] = float
                               ) -> Callable[[str], N]:
@@ -334,8 +365,8 @@ class MetaCSVParser:
         return lambda w: func(w) / 100
 
 
-def get_interpreter(meta_path: Union[str, Path] = None, strict: bool = False,
-                    skip_types: bool = True) -> CSVInterpreter:
+def get_interpreter(meta_path: Union[str, Path, BinaryIO, TextIO],
+                    strict: bool = False) -> CSVInterpreter:
     try:
         interpreter = MetaCSVParser(meta_path, strict).parse()
     except FileNotFoundError:
@@ -343,18 +374,30 @@ def get_interpreter(meta_path: Union[str, Path] = None, strict: bool = False,
     return interpreter
 
 
-def open_csv(path: Union[str, Path], meta_path: Union[str, Path] = None,
+def open_csv(path: Union[str, Path, BinaryIO, TextIO],
+             meta_path: Union[str, Path, BinaryIO, TextIO] = None,
              strict: bool = False, skip_types=True) -> Iterator[List[Any]]:
     if meta_path is None:
-        meta_path = path.with_suffix(".mcsv")
+        meta_path = _find_meta_path(meta_path, path)
     interpreter = get_interpreter(meta_path, strict)
     return interpreter.reader(path, skip_types)
 
 
-def open_dict_csv(path: Union[str, Path], meta_path: Union[str, Path] = None,
+def open_dict_csv(path: Union[str, Path, BinaryIO, TextIO],
+                  meta_path: Union[str, Path, BinaryIO, TextIO] = None,
                   strict: bool = False, skip_types=True
                   ) -> Iterator[Mapping[str, Any]]:
     if meta_path is None:
-        meta_path = path.with_suffix(".mcsv")
+        meta_path = _find_meta_path(meta_path, path)
     interpreter = get_interpreter(meta_path, strict)
     return interpreter.dict_reader(path, skip_types)
+
+
+def _find_meta_path(meta_path, path):
+    if isinstance(path, Path):
+        pass
+    elif isinstance(path, str):
+        path = Path(path)
+    else:
+        raise ValueError("Can't find the MetaCSV file")
+    return path.with_suffix(".mcsv")

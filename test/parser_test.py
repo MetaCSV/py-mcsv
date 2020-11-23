@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import datetime
 #  py-mcsv - A MetaCSV parser for Python
 #      Copyright (C) 2020 J. Férard <https://github.com/jferard>
 #
@@ -17,27 +18,27 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import io
+import os
 import unittest
-from datetime import datetime
 
-from mcsv.parser import get_interpreter
+from mcsv.parser import get_interpreter, open_dict_csv
 
 
 class ParserTest(unittest.TestCase):
-    def test(self):
-        reader = get_interpreter("test/fixtures/meta_csv.mcsv").dict_reader(
-            "test/fixtures/meta_csv.mcsv", False)
+    def test_meta(self):
+        reader = get_interpreter(
+            self._get_fixture("meta_csv.mcsv")).dict_reader(
+            self._get_fixture("meta_csv.mcsv"), False)
         self.assertEqual({'domain': 'text', 'key': 'text', 'value': 'text'},
                          next(reader))
         self.assertEqual(
             {'domain': 'file', 'key': 'encoding', 'value': 'utf-8'},
             next(reader))
 
-    def test2(self):
-        reader = get_interpreter(
-            "test/fixtures/20201001-bal-216402149.mcsv").dict_reader(
-            "test/fixtures/20201001-bal-216402149.csv", False)
+    def test_bal(self):
+        reader = open_dict_csv(self._get_fixture("20201001-bal-216402149.csv"),
+                               skip_types=False)
         self.assertEqual({'cle_interop': 'text',
                           'commune_nom': 'text',
                           'complement': 'text',
@@ -59,7 +60,7 @@ class ParserTest(unittest.TestCase):
             {'cle_interop': '64214_0010_00700',
              'commune_nom': 'Espès-undurein',
              'complement': '',
-             'date_der_maj': datetime(2020, 6, 11, 0, 0, 0).timetuple(),
+             'date_der_maj': datetime.date(2020, 6, 11),
              'lat': 43.28315047649357,
              'long': -0.8748110149745267,
              'numero': 700,
@@ -73,6 +74,19 @@ class ParserTest(unittest.TestCase):
              'x': 385432.96,
              'y': 6250383.75},
             next(reader))
+
+    def test_self_contained_no_types(self):
+        reader = open_dict_csv(self._get_fixture("example.csv"))
+        self.assertEqual(
+            [{'count': 15, 'date': datetime.date(2020, 11, 21),
+              'name': 'foo'},
+             {'count': -8, 'date': datetime.date(2020, 11, 22),
+              'name': 'foo'}],
+            list(reader))
+
+    def _get_fixture(self, fixture_name: str) -> str:
+        return os.path.abspath(
+            os.path.join(__file__, "../fixtures", fixture_name))
 
 
 if __name__ == "__main__":
