@@ -80,32 +80,50 @@ class MetaCSVData:
                 path = Path(path)
 
             with path.open("w", newline="\r\n") as dest:
-                self._write(dest, minimal)
+                if minimal:
+                    self._write_minimal(dest)
+                else:
+                    self._write_verbose(dest)
 
-    def _write(self, dest, minimal):
+    def _write_minimal(self, dest, minimal):
         writer = csv.writer(dest)
         writer.writerow(["domain", "key", "value"])
-        if not minimal or self.encoding.casefold() != "utf-8":
+        if self.encoding.casefold() != "utf-8":
             writer.writerow(["file", "encoding", self.encoding])
-        if not minimal or self.dialect.lineterminator != "\r\n":
+        if self.dialect.lineterminator != "\r\n":
             writer.writerow(
                 ["file", "line_terminator", self.dialect.lineterminator])
-        if not minimal or self.dialect.delimiter != ",":
+        if self.dialect.delimiter != ",":
             writer.writerow(["csv", "delimiter", self.dialect.delimiter])
-        if not minimal or not self.dialect.doublequote:
+        if not self.dialect.doublequote:
             writer.writerow(["csv", "double_quote", str(
                 bool(self.dialect.skipinitialspace)).lower()])
-        if not minimal or self.dialect.escapechar:
+        if self.dialect.escapechar:
             writer.writerow(["csv", "escape_char", self.dialect.escapechar])
-        if not minimal or self.dialect.quotechar != '"':
+        if self.dialect.quotechar != '"':
             writer.writerow(["csv", "quote_char", self.dialect.quotechar])
-        if not minimal or self.dialect.skipinitialspace:
+        if self.dialect.skipinitialspace:
             writer.writerow(["csv", "skip_initial_space", str(
                 bool(self.dialect.skipinitialspace)).lower()])
         for i, description in enumerate(self.field_descriptions):
-            if not minimal or not isinstance(description, TextDescription):
+            if not isinstance(description, TextDescription):
                 writer.writerow(["data", f"col/{i}/type", str(description)])
 
+    def _write_verbose(self, dest, minimal):
+        writer = csv.writer(dest)
+        writer.writerow(["domain", "key", "value"])
+        writer.writerow(["file", "encoding", self.encoding])
+        writer.writerow(
+                ["file", "line_terminator", self.dialect.lineterminator])
+        writer.writerow(["csv", "delimiter", self.dialect.delimiter])
+        writer.writerow(["csv", "double_quote", str(
+                bool(self.dialect.skipinitialspace)).lower()])
+        writer.writerow(["csv", "escape_char", self.dialect.escapechar])
+        writer.writerow(["csv", "quote_char", self.dialect.quotechar])
+        writer.writerow(["csv", "skip_initial_space", str(
+                bool(self.dialect.skipinitialspace)).lower()])
+        for i, description in enumerate(self.field_descriptions):
+            writer.writerow(["data", f"col/{i}/type", str(description)])
 
 class BooleanDescription(FieldDescription):
     def __init__(self, true_word: str, false_word: str):
