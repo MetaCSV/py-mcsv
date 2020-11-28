@@ -1,4 +1,4 @@
-#  py-mcsv - A MetaCSV parser for Python
+#  py-mcsv - A MetaCSV library for Python
 #      Copyright (C) 2020 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
