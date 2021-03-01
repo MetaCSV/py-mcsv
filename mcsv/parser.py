@@ -70,7 +70,7 @@ class CSVInterpreter:
             yield from self._reader(
                 io.TextIOWrapper(path, encoding=self._encoding), skip_types)
 
-    def _reader(self, source, skip_types):
+    def _reader(self, source, skip_types: bool):
         reader = csv.reader(source, self._dialect)
         header = next(reader)
         yield header

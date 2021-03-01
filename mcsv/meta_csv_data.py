@@ -125,6 +125,7 @@ class MetaCSVData:
         for i, description in enumerate(self.field_descriptions):
             writer.writerow(["data", f"col/{i}/type", str(description)])
 
+
 class BooleanDescription(FieldDescription):
     def __init__(self, true_word: str, false_word: str):
         self._true_word = true_word
