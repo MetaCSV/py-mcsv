@@ -1,3 +1,4 @@
+# coding: utf-8
 #  py-mcsv - A MetaCSV library for Python
 #      Copyright (C) 2020 J. Férard <https://github.com/jferard>
 #
@@ -34,227 +35,188 @@
 
 import csv
 import io
+import logging
 import typing
 from pathlib import Path
-from typing import Tuple, Optional, Union
+from typing import Mapping
+from typing import Union
 
-
-class FieldDescription:
-    @staticmethod
-    def _none_to_empty(value):
-        return "" if value is None else value
+from mcsv.field_description import FieldDescription
+from mcsv.field_descriptions import TextFieldDescription
+from mcsv.util import RFC4180_DIALECT, rfc4180_dialect
 
 
 class MetaCSVData:
-    def __init__(self, path: Path, encoding: str, dialect: csv.Dialect,
-                 header: Tuple[str],
-                 field_descriptions: Tuple[FieldDescription]):
-        self.path = path
+    def __init__(self, meta_version: str, meta: Mapping[str, str],
+                 encoding: str, bom: bool, dialect: csv.Dialect,
+                 null_value: str,
+                 field_description_by_index: Mapping[int, FieldDescription]):
+        self.meta_version = meta_version
+        self.meta = meta
         self.encoding = encoding
+        self.bom = bom
         self.dialect = dialect
-        self.header = header
-        self.field_descriptions = list(field_descriptions)
-
-    def __setitem__(self, key, value):
-        if isinstance(key, int):
-            self.field_descriptions[key] = value
-        else:
-            try:
-                i = self.header.index(key)
-            except ValueError:
-                pass
-            else:
-                self.field_descriptions[i] = value
-
-    def write(self, path: Optional[Union[
-        str, Path, typing.TextIO, typing.BinaryIO]] = None, minimal=True):
-        if isinstance(path, io.TextIOBase):
-            self._write(path, minimal)
-        elif isinstance(path, (io.RawIOBase, io.BufferedIOBase)):
-            self._write(io.TextIOWrapper(path, encoding="utf-8", newline="\r\n"
-                                         ), minimal)
-        else:
-            if path is None:
-                path = self.path.with_suffix(".mcsv")
-            elif isinstance(path, str):
-                path = Path(path)
-
-            with path.open("w", newline="\r\n") as dest:
-                if minimal:
-                    self._write_minimal(dest)
-                else:
-                    self._write_verbose(dest)
-
-    def _write_minimal(self, dest, minimal):
-        writer = csv.writer(dest)
-        writer.writerow(["domain", "key", "value"])
-        if self.encoding.casefold() != "utf-8":
-            writer.writerow(["file", "encoding", self.encoding])
-        if self.dialect.lineterminator != "\r\n":
-            writer.writerow(
-                ["file", "line_terminator", self.dialect.lineterminator])
-        if self.dialect.delimiter != ",":
-            writer.writerow(["csv", "delimiter", self.dialect.delimiter])
-        if not self.dialect.doublequote:
-            writer.writerow(["csv", "double_quote", str(
-                bool(self.dialect.skipinitialspace)).lower()])
-        if self.dialect.escapechar:
-            writer.writerow(["csv", "escape_char", self.dialect.escapechar])
-        if self.dialect.quotechar != '"':
-            writer.writerow(["csv", "quote_char", self.dialect.quotechar])
-        if self.dialect.skipinitialspace:
-            writer.writerow(["csv", "skip_initial_space", str(
-                bool(self.dialect.skipinitialspace)).lower()])
-        for i, description in enumerate(self.field_descriptions):
-            if not isinstance(description, TextDescription):
-                writer.writerow(["data", f"col/{i}/type", str(description)])
-
-    def _write_verbose(self, dest, minimal):
-        writer = csv.writer(dest)
-        writer.writerow(["domain", "key", "value"])
-        writer.writerow(["file", "encoding", self.encoding])
-        writer.writerow(
-                ["file", "line_terminator", self.dialect.lineterminator])
-        writer.writerow(["csv", "delimiter", self.dialect.delimiter])
-        writer.writerow(["csv", "double_quote", str(
-                bool(self.dialect.skipinitialspace)).lower()])
-        writer.writerow(["csv", "escape_char", self.dialect.escapechar])
-        writer.writerow(["csv", "quote_char", self.dialect.quotechar])
-        writer.writerow(["csv", "skip_initial_space", str(
-                bool(self.dialect.skipinitialspace)).lower()])
-        for i, description in enumerate(self.field_descriptions):
-            writer.writerow(["data", f"col/{i}/type", str(description)])
+        self.null_value = null_value
+        self.field_description_by_index = field_description_by_index
 
 
-class BooleanDescription(FieldDescription):
-    def __init__(self, true_word: str, false_word: str):
-        self._true_word = true_word
-        self._false_word = false_word
+class MetaCSVRenderer:
+    @staticmethod
+    def create(dest: Union[
+        str, Path, typing.TextIO, typing.BinaryIO], minimal=True):
+        if isinstance(dest, io.TextIOBase):
+            return MetaCSVRenderer._create_from_dest(dest, minimal)
+        elif isinstance(dest, (io.RawIOBase, io.BufferedIOBase)):
+            dest = io.TextIOWrapper(dest, encoding="utf-8", newline="\r\n")
+            return MetaCSVRenderer._create_from_dest(dest, minimal)
+        elif isinstance(dest, Path):
+            return MetaCSVRenderer._create_from_path(dest, minimal)
+        elif isinstance(dest, str):
+            return MetaCSVRenderer._create_from_path(Path(dest), minimal)
 
-    def __repr__(self):
-        return (f"BooleanDescription({repr(self._true_word)}, "
-                f"{repr(self._false_word)})")
+    @staticmethod
+    def _create_from_path(path, minimal):
+        with path.open("w", newline="\r\n") as dest:
+            return MetaCSVRenderer._create_from_dest(dest, minimal)
 
-    def __str__(self):
-        return f"boolean/{self._true_word}/{self._false_word}"
+    @staticmethod
+    def _create_from_dest(dest, minimal):
+        writer = csv.writer(dest, RFC4180_DIALECT)
+        return MetaCSVRenderer(writer, minimal)
 
+    def __init__(self, writer: csv.writer, minimal=True):
+        self._writer = writer
+        self._minimal = minimal
 
-class CurrencyDescription(FieldDescription):
-    def __init__(self, pre: Optional[bool], currency: Optional[str],
-                 float_description: FieldDescription):
-        self._pre = pre
-        self._currency = currency
-        self._float_description = float_description
+    # def __init__(self, dest: Path, _encoding: str, _dialect: csv.Dialect,
+    #              header: Tuple[str],
+    #              field_descriptions: Tuple[FieldDescription]):
+    #     self.dest = dest
+    #     self._encoding = _encoding
+    #     self._dialect = _dialect
+    #     self.header = header
+    #     self.field_descriptions = list(field_descriptions)
 
-    def __repr__(self):
-        return (f"CurrencyDescription({repr(self._pre)}, "
-                f"{repr(self._currency)}, "
-                f"{repr(self._float_description)})")
+    # def __setitem__(self, key, value):
+    #     if isinstance(key, int):
+    #         self.field_descriptions[key] = value
+    #     else:
+    #         try:
+    #             i = self.header.index(key)
+    #         except ValueError:
+    #             pass
+    #         else:
+    #             self.field_descriptions[i] = value
 
-    def __str__(self):
-        pre = self._none_to_empty("pre" if self._pre else "post")
-        return (f"currency/{pre}/{self._none_to_empty(self._currency)}/"
-                f"{self._float_description}")
+    def _write_minimal(self, data: MetaCSVData):
+        self._writer.writerow(["domain", "key", "delimiter"])
+        if data.encoding.casefold() == "utf-8-sig":
+            self._writer.writerow(["file", "encoding", "utf-8"])
+            self._writer.writerow(["file", "bom", "true"])
+        elif data.encoding.casefold() != "utf-8":
+            self._writer.writerow(["file", "encoding", data.encoding])
+        elif data.bom:
+            self._writer.writerow(["file", "bom", "true"])
 
+        if data.dialect.lineterminator != "\r\n":
+            self._writer.writerow(
+                ["file", "line_terminator", data.dialect.lineterminator])
+        if data.dialect.delimiter != ",":
+            self._writer.writerow(["csv", "delimiter", data.dialect.delimiter])
+        if not data.dialect.doublequote:
+            self._writer.writerow(["csv", "double_quote", str(
+                bool(data.dialect.skipinitialspace)).lower()])
+        if data.dialect.escapechar:
+            self._writer.writerow(
+                ["csv", "escape_char", data.dialect.escapechar])
+        if data.dialect.quotechar != '"':
+            self._writer.writerow(["csv", "quote_char", data.dialect.quotechar])
+        if data.dialect.skipinitialspace:
+            self._writer.writerow(["csv", "skip_initial_space", str(
+                bool(data.dialect.skipinitialspace)).lower()])
+        for i, description in data.field_description_by_index.items():
+            if not isinstance(description, TextFieldDescription):
+                self._writer.writerow(
+                    ["data", f"col/{i}/type", str(description)])
 
-class DateDescription(FieldDescription):
-    def __init__(self, date_format: str, locale_name: Optional[str] = None):
-        self._date_format = date_format
-        self._locale_name = locale_name
-
-    def __repr__(self):
-        if self._locale_name is None:
-            return f"DateDescription({repr(self._date_format)})"
-        else:
-            return (f"DateDescription({repr(self._date_format)}, "
-                    f"{repr(self._locale_name)})")
-
-    def __str__(self):
-        if self._locale_name is None:
-            return f"date/{self._date_format}"
-        else:
-            return f"date/{self._date_format}/{self._locale_name}"
-
-
-class DatetimeDescription(FieldDescription):
-    def __init__(self, date_format: str, locale_name: Optional[str] = None):
-        self._date_format = date_format
-        self._locale_name = locale_name
-
-    def __repr__(self):
-        if self._locale_name is None:
-            return f"DatetimeDescription({repr(self._date_format)})"
-        else:
-            return (f"DatetimeDescription({repr(self._date_format)}, "
-                    f"{repr(self._locale_name)})")
-
-    def __str__(self):
-        if self._locale_name is None:
-            return f"datetime/{self._date_format}"
-        else:
-            return f"datetime/{self._date_format}/{self._locale_name}"
-
-
-class FloatDescription(FieldDescription):
-    def __init__(self, thousand_sep: Optional[str], decimal_sep: str):
-        self._thousand_sep = thousand_sep
-        self._decimal_sep = decimal_sep
-
-    def __repr__(self):
-        return (f"FloatDescription({repr(self._thousand_sep)}, "
-                f"{repr(self._decimal_sep)})")
-
-    def __str__(self):
-        return (f"float/{self._none_to_empty(self._thousand_sep)}/"
-                f"{self._decimal_sep}")
-
-
-class IntegerDescription(FieldDescription):
-    def __init__(self, thousand_sep: Optional[str] = None):
-        self._thousand_sep = thousand_sep
-
-    def __repr__(self):
-        if self._thousand_sep is None:
-            return "IntegerDescription.INSTANCE"
-        else:
-            return f"IntegerDescription({repr(self._thousand_sep)}"
-
-    def __str__(self):
-        if self._thousand_sep is None:
-            return f"integer"
-        else:
-            return f"integer/{self._none_to_empty(self._thousand_sep)}"
+    def _write_verbose(self, data: MetaCSVData):
+        self._writer.writerow(["domain", "key", "delimiter"])
+        self._writer.writerow(["file", "encoding", data.encoding])
+        self._writer.writerow(
+            ["file", "line_terminator", data.dialect.lineterminator])
+        self._writer.writerow(["csv", "delimiter", data.dialect.delimiter])
+        self._writer.writerow(["csv", "double_quote", str(
+            bool(data.dialect.skipinitialspace)).lower()])
+        self._writer.writerow(["csv", "escape_char", data.dialect.escapechar])
+        self._writer.writerow(["csv", "quote_char", data.dialect.quotechar])
+        self._writer.writerow(["csv", "skip_initial_space", str(
+            bool(data.dialect.skipinitialspace)).lower()])
+        for i, description in data.field_description_by_index.items():
+            self._writer.writerow(["data", f"col/{i}/type", str(description)])
 
 
-IntegerDescription.INSTANCE = IntegerDescription()
+class MetaCSVDataBuilder:
+    def __init__(self):
+        self._logger = logging.getLogger("py-mcsv")
+        self._dialect = rfc4180_dialect()
+        self._description_by_col_index = {}
+        self._meta_version = "draft0"
+        self._meta = {}
+        self._encoding = "UTF-8"
+        self._bom = False
+        self._null_value = ""
 
+    def build(self) -> "MetaCSVData":
+        return MetaCSVData(self._meta_version, self._meta, self._encoding,
+                           self._bom, self._dialect, self._null_value,
+                           self._description_by_col_index)
 
-class PercentageDescription(FieldDescription):
-    def __init__(self, pre: bool, sign: Optional[str],
-                 float_description: FieldDescription):
-        self._pre = pre
-        self._sign = sign
-        self._float_description = float_description
+    def metaVersion(self, version: str) -> "MetaCSVDataBuilder":
+        self._meta_version = version
+        return self
 
-    def __repr__(self):
-        return (f"PercentageDescription({repr(self._pre)}, "
-                f"{repr(self._sign)}, "
-                f"{repr(self._float_description)})")
+    def meta(self, key: str, value: str) -> "MetaCSVDataBuilder":
+        self._meta[key] = value
+        return self
 
-    def __str__(self):
-        pre = "pre" if self._pre else "post"
-        return (f"percentage/{pre}/{self._none_to_empty(self._sign)}/"
-                f"{self._float_description}")
+    def encoding(self, encoding) -> "MetaCSVDataBuilder":
+        self._encoding = encoding
+        return self
 
+    def bom(self, bom: True) -> "MetaCSVDataBuilder":
+        self._bom = bom
+        return self
 
-class TextDescription(FieldDescription):
-    INSTANCE = None
+    def line_terminator(self, lt: str) -> "MetaCSVDataBuilder":
+        self._dialect.lineterminator = lt
+        return self
 
-    def __repr__(self):
-        return "TextDescription.INSTANCE"
+    def delimiter(self, delimiter: str) -> "MetaCSVDataBuilder":
+        self._dialect.delimiter = delimiter
+        return self
 
-    def __str__(self):
-        return "text"
+    def double_quote(self, dq: bool) -> "MetaCSVDataBuilder":
+        self._dialect.doublequote = dq
+        return self
 
+    def escape_char(self, ec: str) -> "MetaCSVDataBuilder":
+        self._dialect.escapechar = ec
+        return self
 
-TextDescription.INSTANCE = TextDescription()
+    def quote_char(self, qc: str) -> "MetaCSVDataBuilder":
+        self._dialect.quotechar = qc
+        return self
+
+    def skip_initial_space(self, sis: bool) -> "MetaCSVDataBuilder":
+        self._dialect.skipinitialspace = sis
+        return self
+
+    def null_value(self, value: str) -> "MetaCSVDataBuilder":
+        self._null_value = value
+        return self
+
+    def description_by_col_index(self, i: int,
+                                 description: FieldDescription
+                                 ) -> "MetaCSVDataBuilder":
+        self._description_by_col_index[i] = description
+        return self

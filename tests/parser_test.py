@@ -1,6 +1,4 @@
 # coding: utf-8
-
-import datetime
 #  py-mcsv - A MetaCSV library for Python
 #      Copyright (C) 2020 J. Férard <https://github.com/jferard>
 #
@@ -18,19 +16,19 @@ import datetime
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import io
+import datetime
 import os
 import unittest
 
-from mcsv.parser import get_interpreter, open_dict_csv
+from mcsv.parser import get_parser, open_dict_csv
 
 
 class ParserTest(unittest.TestCase):
     def test_meta(self):
-        reader = get_interpreter(
+        reader = get_parser(
             self._get_fixture("meta_csv.mcsv")).dict_reader(
             self._get_fixture("meta_csv.mcsv"), False)
-        self.assertEqual({'domain': 'text', 'key': 'text', 'value': 'text'},
+        self.assertEqual({'domain': 'TEXT', 'key': 'TEXT', 'value': 'TEXT'},
                          next(reader))
         self.assertEqual(
             {'domain': 'file', 'key': 'encoding', 'value': 'utf-8'},
@@ -39,27 +37,27 @@ class ParserTest(unittest.TestCase):
     def test_bal(self):
         reader = open_dict_csv(self._get_fixture("20201001-bal-216402149.csv"),
                                skip_types=False)
-        self.assertEqual({'cle_interop': 'text',
-                          'commune_nom': 'text',
-                          'complement': 'text',
-                          'date_der_maj': 'date/yyyy-MM-dd',
-                          'lat': 'float//.',
-                          'long': 'float//.',
-                          'numero': 'integer',
-                          'position': 'text',
-                          'refparc': 'text',
-                          'source': 'text',
-                          'suffixe': 'text',
-                          'uid_adresse': 'text',
-                          'voie_nom': 'text',
-                          'voie_nom_eu': 'text',
-                          'x': 'float//.',
-                          'y': 'float//.'},
+        self.assertEqual({'cle_interop': 'TEXT',
+                          'commune_nom': 'TEXT',
+                          'complement': 'TEXT',
+                          'date_der_maj': 'DATE',
+                          'lat': 'FLOAT',
+                          'long': 'FLOAT',
+                          'numero': 'INTEGER',
+                          'position': 'TEXT',
+                          'refparc': 'TEXT',
+                          'source': 'TEXT',
+                          'suffixe': 'TEXT',
+                          'uid_adresse': 'TEXT',
+                          'voie_nom': 'TEXT',
+                          'voie_nom_eu': 'TEXT',
+                          'x': 'FLOAT',
+                          'y': 'FLOAT'},
                          next(reader))
         self.assertEqual(
             {'cle_interop': '64214_0010_00700',
              'commune_nom': 'Espès-undurein',
-             'complement': '',
+             'complement': None,
              'date_der_maj': datetime.date(2020, 6, 11),
              'lat': 43.28315047649357,
              'long': -0.8748110149745267,
@@ -67,8 +65,8 @@ class ParserTest(unittest.TestCase):
              'position': 'entrée',
              'refparc': 'ZB0188',
              'source': 'Commune de Espès-undurein',
-             'suffixe': '',
-             'uid_adresse': '',
+             'suffixe': None,
+             'uid_adresse': None,
              'voie_nom': 'Route du Pays de Soule',
              'voie_nom_eu': 'Xiberoko errepidea',
              'x': 385432.96,
