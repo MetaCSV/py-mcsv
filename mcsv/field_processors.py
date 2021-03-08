@@ -1,5 +1,5 @@
 #  py-mcsv - A MetaCSV parser for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -28,16 +28,29 @@ class MetaCSVReadException(Exception):
     pass
 
 
+class ReadError:
+    def __init__(self, value: str, description: str):
+        self.value = value
+        self.description = description
+
+    def __eq__(self, other):
+        return (
+                    self.value == other.value and self.description == other.description)
+
+    def __repr__(self):
+        return f"ReadError({self.value}, {self.description})"
+
+
 def text_or_none(text: str, null_value: str) -> Optional[str]:
     if text is None:
         return None
-    textcf = text.strip().casefold()
+    textcf = text.strip()
     return None if textcf == null_value else text
 
 
 class BooleanFieldProcessor(FieldProcessor[bool]):
     def __init__(self, true_word: str, false_word: str, null_value: str):
-        self._null_value = null_value.casefold()
+        self._null_value = null_value
         self._false_word = false_word.casefold()
         self._true_word = true_word.casefold()
 
@@ -45,9 +58,9 @@ class BooleanFieldProcessor(FieldProcessor[bool]):
         text = text_or_none(text, self._null_value)
         if text is None:
             return None
-        elif text == self._true_word:
+        elif text.casefold() == self._true_word:
             return True
-        elif text == self._false_word:
+        elif text.casefold() == self._false_word:
             return False
         else:
             raise MetaCSVReadException(f"Wrong boolean: {text}")
@@ -103,6 +116,9 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
         self._null_value = null_value
 
     def to_object(self, text: str) -> Optional[T]:
+        text = text_or_none(text, self._null_value)
+        if text is None:
+            return None
         if self._locale_name is None:
             return self._fromtimestamp(
                 mktime(strptime(text, self._date_format)))
@@ -221,14 +237,16 @@ class PercentageFieldProcessor(FieldProcessor[T]):
         if self._pre:
             if text.startswith(self._sign):
                 text = text[size:].lstrip()
-                return self._number_processor.to_object(text)
+                return self._number_processor.to_object(
+                    text) / self._number_processor.to_object("100.0")
             else:
                 raise MetaCSVReadException(
                     f"Missing {self._sign} currency symbol: {text}")
         else:
             if text.endswith(self._sign):
                 text = text[:-size].lstrip()
-                return self._number_processor.to_object(text)
+                return self._number_processor.to_object(
+                    text) / self._number_processor.to_object("100.0")
             else:
                 raise MetaCSVReadException(
                     f"Missing {self._sign} currency symbol: {text}")

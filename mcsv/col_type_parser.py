@@ -1,5 +1,5 @@
 #  py-mcsv - A MetaCSV parser for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -18,7 +18,7 @@
 
 from typing import Callable, Optional, Union, Tuple
 
-from mcsv.date_format_converter import _DateFormatParser
+from mcsv.date_format_converter import _DateFormatParser, date_parser
 from mcsv.field_description import FieldDescription
 from mcsv.field_descriptions import (
     DecimalFieldDescription, DateFieldDescription, DatetimeFieldDescription,
@@ -39,9 +39,9 @@ class ColTypeParser:
 
     def parse_col_type(self, value):
         datatype, *parameters = split_parameters(value)
-        if datatype == "bool":
+        if datatype == "boolean":
             description = self.parse_data_bool_row(parameters)
-        elif datatype == "sign":
+        elif datatype == "currency":
             description = self.parse_data_currency_row(parameters)
         elif datatype == "date":
             description = self.parse_data_date_row(parameters)
@@ -164,7 +164,7 @@ class ColTypeParser:
                                   ) -> Union[PercentageDecimalFieldDescription,
                                              PercentageFloatFieldDescription]:
         if len(parameters) < 3:
-            raise ValueError()
+            raise ValueError(parameters)
 
         pre_post, symbol, number_type, *number_parameters = parameters
         pre = self._is_pre(pre_post)
@@ -181,6 +181,3 @@ class ColTypeParser:
 
     def parse_data_object_row(self, parameters) -> FieldDescription:
         return self._create_object_description(parameters)
-
-
-date_parser = _DateFormatParser.create()

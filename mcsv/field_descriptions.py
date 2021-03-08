@@ -1,6 +1,6 @@
 # coding: utf-8
 #  py-mcsv - A MetaCSV library for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -34,7 +34,7 @@
 #
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, TextIO
+from typing import Optional, TextIO, Type
 
 from mcsv.field_description import DataType, FieldDescription
 from mcsv.field_processor import FieldProcessor
@@ -65,6 +65,9 @@ class BooleanFieldDescription(FieldDescription[bool]):
     def get_data_type(self) -> DataType:
         return DataType.BOOLEAN
 
+    def get_python_type(self) -> Type:
+        return bool
+
     def __repr__(self) -> str:
         return (f"BooleanFieldDescription({repr(self._true_word)}, "
                 f"{repr(self._false_word)})")
@@ -79,7 +82,7 @@ class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
 
     def render(self, out: TextIO):
         pre = none_to_empty("pre" if self._pre else "post")
-        render(out, "sign", pre, none_to_empty(self._currency))
+        render(out, "currency", self._currency, pre, none_to_empty(self._currency))
         out.write("/")
         self._decimal_description.render(out)
 
@@ -90,6 +93,9 @@ class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
 
     def get_data_type(self) -> DataType:
         return DataType.CURRENCY_DECIMAL
+
+    def get_python_type(self) -> Type:
+        return Decimal
 
     def __repr__(self):
         return (f"CurrencyDecimalFieldDescription({repr(self._pre)}, "
@@ -106,7 +112,7 @@ class CurrencyIntegerFieldDescription(FieldDescription):
 
     def render(self, out: TextIO):
         pre = none_to_empty("pre" if self._pre else "post")
-        render(out, "sign", pre, none_to_empty(self._currency))
+        render(out, "currency", self._currency, pre, none_to_empty(self._currency))
         out.write("/")
         self._integer_description.render(out)
 
@@ -116,7 +122,10 @@ class CurrencyIntegerFieldDescription(FieldDescription):
                                       null_value)
 
     def get_data_type(self) -> DataType:
-        return DataType.INTEGER
+        return DataType.CURRENCY_INTEGER
+
+    def get_python_type(self) -> Type:
+        return int
 
     def __repr__(self):
         return (f"CurrencyIntegerFieldDescription({repr(self._pre)}, "
@@ -142,6 +151,9 @@ class DateFieldDescription(FieldDescription[date]):
 
     def get_data_type(self) -> DataType:
         return DataType.DATE
+
+    def get_python_type(self) -> Type:
+        return date
 
     def __repr__(self):
         if self._locale_name is None:
@@ -170,6 +182,9 @@ class DatetimeFieldDescription(FieldDescription[datetime]):
     def get_data_type(self) -> DataType:
         return DataType.DATETIME
 
+    def get_python_type(self) -> Type:
+        return datetime
+
     def __repr__(self):
         if self._locale_name is None:
             return f"DatetimeFieldDescription({repr(self._date_format)})"
@@ -189,6 +204,9 @@ class DecimalFieldDescription(FieldDescription[Decimal]):
 
     def get_data_type(self) -> DataType:
         return DataType.DECIMAL
+
+    def get_python_type(self) -> Type:
+        return Decimal
 
     def __init__(self, thousand_sep: Optional[str], decimal_sep: str):
         self._thousand_sep = thousand_sep
@@ -215,6 +233,9 @@ class FloatFieldDescription(FieldDescription[float]):
     def get_data_type(self) -> DataType:
         return DataType.FLOAT
 
+    def get_python_type(self) -> Type:
+        return float
+
     def __repr__(self):
         return (f"FloatFieldDescription({repr(self._thousand_sep)}, "
                 f"{repr(self._decimal_sep)})")
@@ -235,6 +256,9 @@ class IntegerFieldDescription(FieldDescription[int]):
 
     def get_data_type(self) -> DataType:
         return DataType.INTEGER
+
+    def get_python_type(self) -> Type:
+        return int
 
     def __repr__(self):
         if self._thousand_sep is None:
@@ -258,10 +282,14 @@ class PercentageFloatFieldDescription(FieldDescription[float]):
 
     def to_field_processor(self, null_value: str) -> FieldProcessor[T]:
         return PercentageFieldProcessor(self._pre, self._sign,
-                                        self._float_description, null_value)
+                                        self._float_description.to_field_processor(
+                                            null_value), null_value)
 
     def get_data_type(self) -> DataType:
         return DataType.PERCENTAGE_FLOAT
+
+    def get_python_type(self) -> Type:
+        return float
 
     def __repr__(self):
         return (f"PercentageFloatFieldDescription({repr(self._pre)}, "
@@ -284,10 +312,13 @@ class PercentageDecimalFieldDescription(FieldDescription[Decimal]):
 
     def to_field_processor(self, null_value: str) -> FieldProcessor[T]:
         return PercentageFieldProcessor(self._pre, self._sign,
-                                        self._decimal_description, null_value)
+                                        self._decimal_description.to_field_processor(null_value), null_value)
 
     def get_data_type(self) -> DataType:
         return DataType.PERCENTAGE_DECIMAL
+
+    def get_python_type(self) -> Type:
+        return Decimal
 
     def __repr__(self):
         return (f"PercentageDecimalFieldDescription({repr(self._pre)}, "
@@ -306,6 +337,9 @@ class TextFieldDescription(FieldDescription[str]):
 
     def get_data_type(self) -> DataType:
         return DataType.TEXT
+
+    def get_python_type(self) -> Type:
+        return str
 
     def __repr__(self):
         return "TextFieldDescription.INSTANCE"

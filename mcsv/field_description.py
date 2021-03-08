@@ -1,5 +1,5 @@
 #  py-mcsv - A MetaCSV parser for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -53,8 +53,9 @@ class FieldDescription(ABC, Generic[T]):
     def get_data_type(self) -> DataType:
         pass
 
+    @abstractmethod
     def get_python_type(self) -> Type:
-        return T
+        pass
 
     def __str__(self) -> str:
         o = StringIO()

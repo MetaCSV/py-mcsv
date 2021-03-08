@@ -1,6 +1,6 @@
-py-msv - A MetaCSV parser for Python
+py-mcsv - A MetaCSV parser for Python
 
-Copyright (C) 2020 J. Férard <https://github.com/jferard>
+Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 
 License: GPLv3
 

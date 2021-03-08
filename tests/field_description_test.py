@@ -1,5 +1,5 @@
-#  py-mcsv - A MetaCSV library for Python
-#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
+#  py-mcsv - A MetaCSV parser for Python
+#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -16,3 +16,15 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import unittest
+
+from mcsv.field_descriptions import IntegerFieldDescription
+
+
+class FieldDescriptionTest(unittest.TestCase):
+    def test_type(self):
+        self.assertEqual(int, IntegerFieldDescription().get_python_type())
+
+
+if __name__ == '__main__':
+    unittest.main()

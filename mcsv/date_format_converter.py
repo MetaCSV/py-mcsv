@@ -1,7 +1,7 @@
 # coding: utf-8
 
 #  py-mcsv - A MetaCSV library for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -154,3 +154,6 @@ class _DateFormatParser:
                     state = State.START
                     i -= 1
             i += 1
+
+
+date_parser = _DateFormatParser.create()

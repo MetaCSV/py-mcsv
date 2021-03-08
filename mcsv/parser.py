@@ -1,7 +1,7 @@
 # coding: utf-8
 
 #  py-mcsv - A MetaCSV library for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -21,74 +21,14 @@
 import csv
 import io
 import logging
-from numbers import Number
-from typing import (Union, List, Mapping, Any, Iterator, TypeVar, BinaryIO,
+from typing import (Union, List, BinaryIO,
                     TextIO, Optional, Callable, Tuple)
 from pathlib import Path
-import collections
 
 from mcsv.col_type_parser import ColTypeParser
 from mcsv.field_description import FieldDescription
-from mcsv.field_descriptions import TextFieldDescription
-from mcsv.field_processors import TextFieldProcessor
 from mcsv.meta_csv_data import MetaCSVDataBuilder, MetaCSVData
-from mcsv.util import split_parameters, rfc4180_dialect, RFC4180_DIALECT
-
-N = TypeVar('N', bound=Number)
-
-Converter = collections.namedtuple("Converter", ['datatype', 'func'])
-
-
-class CSVInterpreter:
-    def __init__(self, data: MetaCSVData):
-        self._data = data
-
-    def reader(self, path: Union[str, Path, BinaryIO], skip_types: bool = True
-               ) -> Iterator[List[Any]]:
-        if self._data.encoding == "utf-8" and self._data.bom:
-            encoding = "utf-8-sig"
-        else:
-            encoding = self._data.encoding
-
-        if isinstance(path, (str, Path)):
-            with open(path, "r", encoding=encoding) as source:
-                yield from self._reader(source, skip_types)
-        else:
-            yield from self._reader(
-                io.TextIOWrapper(path, encoding=encoding), skip_types)
-
-    def _reader(self, source, skip_types: bool):
-        reader = csv.reader(source, self._data.dialect)
-        header = next(reader)
-        yield header
-        descriptions = [self._data.field_description_by_index[i]
-                        if i in self._data.field_description_by_index
-                        else TextFieldDescription.INSTANCE
-                        for i in range(len(header))]
-        if not skip_types:
-            yield [description.get_data_type().name
-                   for description in descriptions]
-        processors = [description.to_field_processor(self._data.null_value)
-                      for description in descriptions]
-        for row in reader:
-            yield [processor.to_object(v)
-                   for processor, v in zip(processors, row)]
-
-    def dict_reader(self, path: Union[str, Path], skip_types: bool = True
-                    ) -> Iterator[Mapping[str, Any]]:
-        reader = self.reader(path, skip_types)
-        header = next(reader)
-        width = len(header)
-        for row in reader:
-            if len(row) > width:
-                d = dict(zip(header, row[:width]))
-                d["@other"] = row[width:]
-            else:
-                d = dict(zip(header, row))
-            yield d
-
-
-CSVInterpreter.DEFAULT = CSVInterpreter(MetaCSVDataBuilder().build())
+from mcsv.util import split_parameters, RFC4180_DIALECT
 
 
 class MetaCSVParser:
@@ -100,7 +40,7 @@ class MetaCSVParser:
         self._col_type_parser = ColTypeParser(create_object_description)
         self._meta_csv_builder = MetaCSVDataBuilder()
 
-    def parse(self) -> CSVInterpreter:
+    def parse(self) -> MetaCSVData:
         if isinstance(self._meta_path, (str, Path)):
             with open(self._meta_path, "r", encoding="utf-8") as source:
                 self._parse_source(source)
@@ -113,8 +53,7 @@ class MetaCSVParser:
             raise TypeError(
                 f"meta_path {self._meta_path} ({type(self._meta_path)})")
 
-        data = self._meta_csv_builder.build()
-        return CSVInterpreter(data)
+        return self._meta_csv_builder.build()
 
     def _parse_source(self, source):
         reader = csv.reader(source, RFC4180_DIALECT)
@@ -127,16 +66,16 @@ class MetaCSVParser:
 
     def _parse_row(self, row: List[str]):
         domain, key, value = row
-        if domain == "_meta":
+        if domain == "meta":
             self._parse_meta_row(key, value)
-        if domain == "file":
+        elif domain == "file":
             self._parse_file_row(key, value)
         elif domain == "csv":
             self._parse_csv_row(key, value)
         elif domain == "data":
             self._parse_data_row(key, value)
         else:
-            raise ValueError(f"Unknown domain: {domain}")
+            raise ValueError(f"Unknown domain: '{domain}'")
 
     def _parse_meta_row(self, key, value):
         if key == "version":
@@ -180,7 +119,7 @@ class MetaCSVParser:
             if len(subkeys) != 3:
                 raise ValueError(f"Bad data key {key}")
             self._parse_data_col_row(*subkeys[1:], value)
-        elif subkeys[0] == "_null_value":
+        elif subkeys[0] == "null_value":
             self._meta_csv_builder.null_value(value)
         else:
             raise ValueError(f"Unknown data domain key {key}")
@@ -199,42 +138,3 @@ class MetaCSVParser:
             self._meta_csv_builder.description_by_col_index(n, description)
 
 
-def get_parser(meta_path: Union[str, Path, BinaryIO, TextIO],
-               strict: bool = False,
-               create_object_description: Optional[Callable[
-                   [Tuple[str]], FieldDescription]] = None) -> CSVInterpreter:
-    try:
-        interpreter = MetaCSVParser(meta_path,
-                                    create_object_description).parse()
-    except FileNotFoundError:
-        interpreter = CSVInterpreter.DEFAULT
-    return interpreter
-
-
-def open_csv(path: Union[str, Path, BinaryIO, TextIO],
-             meta_path: Union[str, Path, BinaryIO, TextIO] = None,
-             strict: bool = False, skip_types=True) -> Iterator[List[Any]]:
-    if meta_path is None:
-        meta_path = _find_meta_path(path)
-    interpreter = get_parser(meta_path, strict)
-    return interpreter.reader(path, skip_types)
-
-
-def open_dict_csv(path: Union[str, Path, BinaryIO, TextIO],
-                  meta_path: Union[str, Path, BinaryIO, TextIO] = None,
-                  strict: bool = False, skip_types=True
-                  ) -> Iterator[Mapping[str, Any]]:
-    if meta_path is None:
-        meta_path = _find_meta_path(path)
-    interpreter = get_parser(meta_path, strict)
-    return interpreter.dict_reader(path, skip_types)
-
-
-def _find_meta_path(path):
-    if isinstance(path, Path):
-        pass
-    elif isinstance(path, str):
-        path = Path(path)
-    else:
-        raise ValueError("Can't find the MetaCSV file")
-    return path.with_suffix(".mcsv")
