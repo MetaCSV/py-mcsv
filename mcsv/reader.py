@@ -20,7 +20,7 @@ import csv
 import io
 from pathlib import Path
 from typing import (Iterator, List, Any, Callable, Mapping, Union, TextIO,
-    BinaryIO, Optional, Tuple)
+                    BinaryIO, Optional, Tuple)
 
 from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
@@ -214,7 +214,8 @@ def get_reader_factory(meta_path: Union[str, Path, BinaryIO, TextIO],
 
 
 def open_csv(path: Union[str, Path, BinaryIO, TextIO],
-             meta_path: Union[str, Path, BinaryIO, TextIO] = None) -> MetaCSVReader:
+             meta_path: Union[str, Path, BinaryIO, TextIO] = None
+             ) -> MetaCSVReader:
     if meta_path is None:
         meta_path = _find_meta_path(path)
     reader_factory = get_reader_factory(meta_path)

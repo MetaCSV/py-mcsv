@@ -29,8 +29,8 @@ from mcsv.util import RFC4180_DIALECT
 
 class MetaCSVRenderer:
     @staticmethod
-    def create(dest: Union[
-        str, Path, typing.TextIO, typing.BinaryIO], minimal=True):
+    def create(dest: Union[str, Path, typing.TextIO, typing.BinaryIO],
+               minimal=True) -> "MetaCSVRenderer":
         if isinstance(dest, (typing.IO[str], io.TextIOBase)):
             return MetaCSVRenderer._create_from_dest(dest, minimal)
         elif isinstance(dest, (typing.IO[bytes], io.RawIOBase,
@@ -78,7 +78,8 @@ class MetaCSVRenderer:
             self._writer.writerow(
                 ["csv", "escape_char", data.dialect.escapechar])
         if data.dialect.quotechar != '"':
-            self._writer.writerow(["csv", "quote_char", data.dialect.quotechar])
+            self._writer.writerow(["csv", "quote_char",
+                                   data.dialect.quotechar])
         if data.dialect.skipinitialspace:
             self._writer.writerow(["csv", "skip_initial_space", str(
                 bool(data.dialect.skipinitialspace)).lower()])

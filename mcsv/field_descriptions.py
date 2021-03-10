@@ -38,12 +38,11 @@ from typing import Optional, TextIO, Type
 
 from mcsv.field_description import DataType, FieldDescription
 from mcsv.field_processor import FieldProcessor
-from mcsv.field_processors import (BooleanFieldProcessor,
-                                   FloatFieldProcessor, IntegerFieldProcessor,
-                                   CurrencyFieldProcessor,
-                                   DecimalFieldProcessor,
-                                   DateAndDatetimeFieldProcessor,
-                                   PercentageFieldProcessor, TextFieldProcessor)
+from mcsv.field_processors import (
+    BooleanFieldProcessor, FloatFieldProcessor, IntegerFieldProcessor,
+    CurrencyFieldProcessor, DecimalFieldProcessor,
+    DateAndDatetimeFieldProcessor, PercentageFieldProcessor,
+    TextFieldProcessor)
 from mcsv.util import render, none_to_empty, T
 
 
@@ -82,7 +81,8 @@ class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
 
     def render(self, out: TextIO):
         pre = none_to_empty("pre" if self._pre else "post")
-        render(out, "currency", self._currency, pre, none_to_empty(self._currency))
+        render(out, "currency", self._currency, pre, none_to_empty(
+            self._currency))
         out.write("/")
         self._decimal_description.render(out)
 
@@ -112,7 +112,8 @@ class CurrencyIntegerFieldDescription(FieldDescription):
 
     def render(self, out: TextIO):
         pre = none_to_empty("pre" if self._pre else "post")
-        render(out, "currency", self._currency, pre, none_to_empty(self._currency))
+        render(out, "currency", self._currency, pre, none_to_empty(
+            self._currency))
         out.write("/")
         self._integer_description.render(out)
 
@@ -281,9 +282,9 @@ class PercentageFloatFieldDescription(FieldDescription[float]):
         self._float_description.render(out)
 
     def to_field_processor(self, null_value: str) -> FieldProcessor[T]:
-        return PercentageFieldProcessor(self._pre, self._sign,
-                                        self._float_description.to_field_processor(
-                                            null_value), null_value)
+        return PercentageFieldProcessor(
+            self._pre, self._sign, self._float_description.to_field_processor(
+                null_value), null_value)
 
     def get_data_type(self) -> DataType:
         return DataType.PERCENTAGE_FLOAT
@@ -311,8 +312,10 @@ class PercentageDecimalFieldDescription(FieldDescription[Decimal]):
         self._decimal_description.render(out)
 
     def to_field_processor(self, null_value: str) -> FieldProcessor[T]:
-        return PercentageFieldProcessor(self._pre, self._sign,
-                                        self._decimal_description.to_field_processor(null_value), null_value)
+        return PercentageFieldProcessor(
+            self._pre, self._sign,
+            self._decimal_description.to_field_processor(null_value),
+            null_value)
 
     def get_data_type(self) -> DataType:
         return DataType.PERCENTAGE_DECIMAL

@@ -18,7 +18,7 @@
 
 from typing import Callable, Optional, Union, Tuple
 
-from mcsv.date_format_converter import _DateFormatParser, date_parser
+from mcsv.date_format_converter import date_parser
 from mcsv.field_description import FieldDescription
 from mcsv.field_descriptions import (
     DecimalFieldDescription, DateFieldDescription, DatetimeFieldDescription,
@@ -30,8 +30,8 @@ from mcsv.util import split_parameters
 
 
 class ColTypeParser:
-    def __init__(self, create_object_description: Optional[Callable[
-        [Tuple[str]], FieldDescription]] = None):
+    def __init__(self, create_object_description: Optional[
+                        Callable[[Tuple[str]], FieldDescription]] = None):
         if create_object_description is None:
             def create_object_description(parameters):
                 return TextFieldDescription.INSTANCE
@@ -102,18 +102,18 @@ class ColTypeParser:
 
     def parse_data_date_row(self, parameters
                             ) -> DateFieldDescription:
-        c1989_date_format, locale_name = self._parse_data_date_or_datetime_parameters(
-            parameters)
+        c1989_date_format, locale_name = \
+            self._parse_data_date_or_datetime_parameters(parameters)
         return DateFieldDescription(c1989_date_format, locale_name)
 
     def parse_data_datetime_row(self, parameters
                                 ) -> DatetimeFieldDescription:
-        c1989_date_format, locale_name = self._parse_data_date_or_datetime_parameters(
-            parameters)
+        c1989_date_format, locale_name = \
+            self._parse_data_date_or_datetime_parameters(parameters)
         return DatetimeFieldDescription(c1989_date_format, locale_name)
 
-    def _parse_data_date_or_datetime_parameters(self, parameters: Tuple[str, ...]
-                                                ) -> Tuple[str, Optional[str]]:
+    def _parse_data_date_or_datetime_parameters(
+            self, parameters: Tuple[str, ...]) -> Tuple[str, Optional[str]]:
         if len(parameters) == 1:
             uldml_date_format = parameters[0]
             locale_name = None

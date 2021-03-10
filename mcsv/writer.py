@@ -45,7 +45,7 @@ class MetaCSVWriterFactory:
         dest = self._get_dest(path)
         writer = csv.writer(dest, self._data.dialect)
         map_row = self._get_map_row()
-        return MetaCSVWriter(writer, self._data)
+        return MetaCSVWriter(writer, map_row)
 
     def _get_dest(self, path):
         encoding = self._get_encoding()
@@ -67,8 +67,10 @@ class MetaCSVWriterFactory:
         return encoding
 
     def _get_map_row(self):
-        processors = {i: d.to_field_processor(self._data.null_value) for i, d in
-                      self._data.field_description_by_index.items()}
+        processors = {
+            i: d.to_field_processor(self._data.null_value)
+            for i, d in self._data.field_description_by_index.items()
+        }
 
         def map_row(row: List[Any]) -> List[str]:
             return [processors[i].to_string(value) if i in processors else str(

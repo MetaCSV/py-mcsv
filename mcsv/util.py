@@ -19,8 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import csv
 from contextlib import contextmanager
-from datetime import date
-from locale import getlocale, LC_TIME, setlocale, Error
+from locale import getlocale, LC_TIME, setlocale
 from typing import TextIO, TypeVar
 
 T = TypeVar('T')
@@ -195,5 +194,3 @@ if __name__ == "__main__":
     import doctest
 
     doctest.testmod()
-
-

@@ -60,7 +60,8 @@ class MetaCSVParser:
         header = next(reader)
         if header != ["domain", "key", "value"]:
             raise ValueError(
-                f"Bad file header, expected: [\"domain\", \"key\", \"value\"], was {header}")
+                "Bad file header, expected: "
+                f"[\"domain\", \"key\", \"value\"], was {header}")
         for row in reader:
             self._parse_row(row)
 
@@ -79,7 +80,7 @@ class MetaCSVParser:
 
     def _parse_meta_row(self, key, value):
         if key == "version":
-            self._meta_csv_builder.metaVersion(value)
+            self._meta_csv_builder.meta_version(value)
         else:
             self._meta_csv_builder.meta(key, value)
 
@@ -136,5 +137,3 @@ class MetaCSVParser:
 
         if description is not None:
             self._meta_csv_builder.description_by_col_index(n, description)
-
-

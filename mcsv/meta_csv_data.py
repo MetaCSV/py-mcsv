@@ -73,7 +73,7 @@ class MetaCSVDataBuilder:
                            self._bom, self._dialect, self._null_value,
                            self._description_by_col_index)
 
-    def metaVersion(self, version: str) -> "MetaCSVDataBuilder":
+    def meta_version(self, version: str) -> "MetaCSVDataBuilder":
         self._meta_version = version
         return self
 
@@ -128,14 +128,18 @@ class MetaCSVDataBuilder:
 
 
 class MetaCSVMetaData:
-    def __init__(self, description_by_col_index: Mapping[int, FieldDescription]):
+    def __init__(self,
+                 description_by_col_index: Mapping[int, FieldDescription]):
         self._description_by_col_index = description_by_col_index
 
     def get_description(self, c: int) -> FieldDescription:
-        return self._description_by_col_index.get(c, TextFieldDescription.INSTANCE)
+        return self._description_by_col_index.get(
+            c, TextFieldDescription.INSTANCE)
 
     def get_data_type(self, c: int) -> DataType:
-        return self._description_by_col_index.get(c, TextFieldDescription.INSTANCE).get_data_type()
+        return self._description_by_col_index.get(
+            c, TextFieldDescription.INSTANCE).get_data_type()
 
     def get_python_type(self, c: int) -> typing.Type:
-        return self._description_by_col_index.get(c, TextFieldDescription.INSTANCE).get_python_type()
+        return self._description_by_col_index.get(
+            c, TextFieldDescription.INSTANCE).get_python_type()

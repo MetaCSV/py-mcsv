@@ -34,8 +34,8 @@ class ReadError:
         self.description = description
 
     def __eq__(self, other):
-        return (
-                    self.value == other.value and self.description == other.description)
+        return (self.value == other.value
+                and self.description == other.description)
 
     def __repr__(self):
         return f"ReadError({self.value}, {self.description})"
