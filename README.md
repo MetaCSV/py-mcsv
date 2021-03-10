@@ -4,6 +4,9 @@ Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 
 License: GPLv3
 
+[![Build Status](https://travis-ci.com/MetaCSV/py-mcsv.svg?branch=main)](https://travis-ci.com/MetaCSV/py-mcsv)
+[![codecov](https://codecov.io/gh/MetaCSV/py-mcsv/branch/main/graph/badge.svg)](https://codecov.io/gh/MetaCSV/py-mcsv)
+
 # Overview
 py-mcsv is a [MetaCSV](https://github.com/jferard/MetaCSV) parser for Python. 
 I quote the README:
