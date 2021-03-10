@@ -21,13 +21,13 @@ import os
 import unittest
 import urllib.request
 from decimal import Decimal
-from typing import Tuple, TextIO, Optional, List, Type
+from typing import (TextIO, Optional, List, Type)
 from urllib.parse import ParseResult, urlparse
 
 from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.field_processor import FieldProcessor
-from mcsv.field_processors import text_or_none, MetaCSVReadException, ReadError
+from mcsv.field_processors import text_or_none, ReadError
 from mcsv.reader import get_reader_factory, open_dict_csv
 from mcsv.util import T, render
 
@@ -133,7 +133,8 @@ class ParserTest(unittest.TestCase):
             else:
                 return TextFieldDescription.INSTANCE
 
-        examples_dir = "https://raw.githubusercontent.com/MetaCSV/MetaCSV/main/examples/"
+        examples_dir = ("https://raw.githubusercontent.com/"
+                        "MetaCSV/MetaCSV/main/examples/")
         with urllib.request.urlopen(
                 examples_dir + "example1.mcsv") as mcsv_source, \
                 urllib.request.urlopen(

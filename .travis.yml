@@ -1,0 +1,24 @@
+# py4lo
+language: python
+
+python:
+  - "3.7"
+
+cache: pip
+
+# command to run tests and install dependencies
+install:
+  - pip install --upgrade pip
+  - pip install --upgrade setuptools
+  - pip install --upgrade pytest py codecov pytest-cov
+
+  # dependencies
+  - pip install -r requirements.txt
+
+# script
+script:
+  - python3 -m pytest --ignore=example --cov=mcsv && python3 -m pytest --ignore=example --ignore=test --cov-append --doctest-modules
+
+
+after_success:
+  - codecov
