@@ -27,7 +27,7 @@ T = TypeVar('T')
 
 def split_parameters(parameters):
     """
-    >>> split_parameters("date/dd\\/MM\\/yyyy")
+    >>> split_parameters("date/dd\\\\/MM\\\\/yyyy")
     ['date', 'dd/MM/yyyy']
 
     :param parameters:
@@ -161,6 +161,7 @@ def format_integer(value, thousand_separator):
 @contextmanager
 def time_locale(locale_name):
     """
+    >>> from datetime import date
     >>> with time_locale("fr_FR.UTF8"):
     ...     print(date(2020, 1, 1).strftime("%B"))
     janvier
