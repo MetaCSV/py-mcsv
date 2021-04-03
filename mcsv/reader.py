@@ -217,20 +217,28 @@ def get_reader_factory(meta_path: Union[str, Path, BinaryIO, TextIO],
 
 
 def open_csv(path: Union[str, Path, BinaryIO, TextIO],
-             meta_path: Union[str, Path, BinaryIO, TextIO] = None
+             meta_path: Union[str, Path, BinaryIO, TextIO] = None,
+             create_object_description: Optional[Callable[
+                 [Tuple[str]], FieldDescription]] = None,
+             on_error: str = "wrap",
              ) -> MetaCSVReader:
     if meta_path is None:
         meta_path = _find_meta_path(path)
-    reader_factory = get_reader_factory(meta_path)
+    reader_factory = get_reader_factory(meta_path, create_object_description,
+                                        on_error)
     return reader_factory.reader(path)
 
 
 def open_dict_csv(path: Union[str, Path, BinaryIO, TextIO],
                   meta_path: Union[str, Path, BinaryIO, TextIO] = None,
+                  create_object_description: Optional[Callable[
+                      [Tuple[str]], FieldDescription]] = None,
+                  on_error: str = "wrap",
                   ) -> MetaCSVDictReader:
     if meta_path is None:
         meta_path = _find_meta_path(path)
-    reader_factory = get_reader_factory(meta_path)
+    reader_factory = get_reader_factory(meta_path, create_object_description,
+                                        on_error)
     return reader_factory.dict_reader(path)
 
 
