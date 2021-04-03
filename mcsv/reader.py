@@ -97,7 +97,7 @@ class MetaCSVDictReader(Iterator[Mapping[str, Any]]):
 
 
 class MetaCSVReaderFactory:
-    def __init__(self, data: MetaCSVData, on_error="error_type"):
+    def __init__(self, data: MetaCSVData, on_error="wrap"):
         self._data = data
         self._on_error = on_error
 
@@ -147,7 +147,7 @@ class MetaCSVReaderFactory:
                      ) -> Callable[[List[str]], List[Optional[Any]]]:
         processors = [description.to_field_processor(self._data.null_value)
                       for description in descriptions]
-        if self._on_error == "error_type":
+        if self._on_error == "wrap":
             def aux(description: FieldDescription,
                     processor: FieldProcessor,
                     text: str) -> Optional[Any]:
@@ -194,13 +194,13 @@ class MetaCSVReaderFactory:
 
 MetaCSVReaderFactory.DEFAULT = MetaCSVReaderFactory(
     MetaCSVDataBuilder().build(),
-    on_error="error_type")
+    on_error="wrap")
 
 
 def get_reader_factory(meta_path: Union[str, Path, BinaryIO, TextIO],
                        create_object_description: Optional[Callable[
                            [Tuple[str]], FieldDescription]] = None,
-                       on_error: str = "error_type") -> MetaCSVReaderFactory:
+                       on_error: str = "wrap") -> MetaCSVReaderFactory:
     """
     Create a new MetaCSVReaderFactory
 

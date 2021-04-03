@@ -142,7 +142,7 @@ class ParserTest(unittest.TestCase):
 
             reader = get_reader_factory(mcsv_source,
                                         create_object_description,
-                                        on_error="error_type").dict_reader(
+                                        on_error="wrap").dict_reader(
                 csv_source)
             self.assertEqual({
                 'a boolean': DataType.BOOLEAN,

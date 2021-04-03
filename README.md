@@ -23,6 +23,11 @@ have an appropriate MetaCSV file.
 (The [ColumnDet](https://github.com/jferard/ColumnDet) package is able to 
 generate automatically a sensible MetaCSV file for a given CSV file.)  
 
+# Installation
+On Ubuntu Linux:
+
+    $ python3 setup.py install --user
+
 # Example
 Here's a basic example. The `example.csv` file reads (encoding: utf-8, 
 newline: CRLF): 
