@@ -20,7 +20,7 @@ import csv
 import io
 from pathlib import Path
 from typing import (Iterator, List, Any, Callable, Mapping, Union, TextIO,
-                    BinaryIO, Optional, Tuple)
+                    BinaryIO, Optional, Tuple, Type)
 
 from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
@@ -58,8 +58,11 @@ class MetaCSVReader(Iterator[List[Any]]):
         else:
             return self._map_row(row)
 
-    def get_types(self) -> List[DataType]:
+    def get_data_types(self) -> List[DataType]:
         return [d.get_data_type() for d in self._descriptions]
+
+    def get_python_types(self) -> List[Type]:
+        return [d.get_python_type() for d in self._descriptions]
 
 
 class MetaCSVDictReader(Iterator[Mapping[str, Any]]):
