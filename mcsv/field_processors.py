@@ -119,13 +119,16 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
         text = text_or_none(text, self._null_value)
         if text is None:
             return None
-        if self._locale_name is None:
-            return self._fromtimestamp(
-                mktime(strptime(text, self._date_format)))
-        else:
-            with time_locale(self._locale_name):
+        try:
+            if self._locale_name is None:
                 return self._fromtimestamp(
                     mktime(strptime(text, self._date_format)))
+            else:
+                with time_locale(self._locale_name):
+                    return self._fromtimestamp(
+                        mktime(strptime(text, self._date_format)))
+        except ValueError as e:
+            raise MetaCSVReadException(e.args[0])
 
     def to_string(self, value: Optional[T]) -> str:
         if self._locale_name is None:

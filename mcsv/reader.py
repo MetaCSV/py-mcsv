@@ -31,15 +31,15 @@ from mcsv.parser import MetaCSVParser
 
 
 class MetaCSVReader(Iterator[List[Any]]):
-    def __init__(self, header: List[str], reader: csv.reader,
-                 source: TextIO,
+    def __init__(self, header: List[str], reader: csv.reader, source: TextIO,
                  map_row: Callable[[List[str]], List[Any]],
-                 descriptions: List[FieldDescription]):
+                 descriptions: List[FieldDescription], data: MetaCSVData):
         self.header = header
         self._reader = reader
         self._source = source
         self._map_row = map_row
         self._descriptions = descriptions
+        self.data = data
         self._first = True
 
     def __iter__(self) -> "MetaCSVReader":
@@ -114,7 +114,8 @@ class MetaCSVReaderFactory:
                         else TextFieldDescription.INSTANCE
                         for i in range(len(header))]
         map_row = self._get_map_row(descriptions)
-        return MetaCSVReader(header, reader, source, map_row, descriptions)
+        return MetaCSVReader(header, reader, source, map_row, descriptions, 
+                             self._data)
 
     def dict_reader(self, path: Union[str, Path]) -> MetaCSVDictReader:
         source = self._get_source(path)
