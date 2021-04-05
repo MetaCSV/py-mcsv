@@ -122,11 +122,11 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
         try:
             if self._locale_name is None:
                 return self._fromtimestamp(
-                    mktime(strptime(text, self._date_format)))
+                    mktime(self._strptime(text)))
             else:
                 with time_locale(self._locale_name):
                     return self._fromtimestamp(
-                        mktime(strptime(text, self._date_format)))
+                        mktime(self._strptime(text)))
         except ValueError as e:
             raise MetaCSVReadException(e.args[0])
 
@@ -136,6 +136,19 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
         else:
             with time_locale(self._locale_name):
                 return value.strftime(self._date_format)
+
+    def _strptime(self, text):
+        # see https://stackoverflow.com/a/5045374/6914441
+        try:
+            return strptime(text, self._date_format)
+        except ValueError as e:
+            if e.args:
+                msg = e.args[0]
+                unconverted, chars = msg.split(": ", maxsplit=2)
+                print(text[:-len(chars)])
+                if unconverted == "unconverted data remains":
+                    return strptime(text[:-len(chars)], self._date_format)
+            raise
 
 
 class DecimalFieldProcessor(FieldProcessor[Decimal]):
