@@ -38,7 +38,7 @@ class MetaCSVReader(Iterator[List[Any]]):
         self._reader = reader
         self._source = source
         self._map_row = map_row
-        self._descriptions = descriptions
+        self.descriptions = descriptions
         self.meta_csv_data = meta_csv_data
         self._first = True
 
@@ -59,10 +59,10 @@ class MetaCSVReader(Iterator[List[Any]]):
             return self._map_row(row)
 
     def get_data_types(self) -> List[DataType]:
-        return [d.get_data_type() for d in self._descriptions]
+        return [d.get_data_type() for d in self.descriptions]
 
     def get_python_types(self) -> List[Type]:
-        return [d.get_python_type() for d in self._descriptions]
+        return [d.get_python_type() for d in self.descriptions]
 
 
 class MetaCSVDictReader(Iterator[Mapping[str, Any]]):
