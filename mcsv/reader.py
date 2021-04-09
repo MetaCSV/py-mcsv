@@ -33,13 +33,13 @@ from mcsv.parser import MetaCSVParser
 class MetaCSVReader(Iterator[List[Any]]):
     def __init__(self, header: List[str], reader: csv.reader, source: TextIO,
                  map_row: Callable[[List[str]], List[Any]],
-                 descriptions: List[FieldDescription], data: MetaCSVData):
+                 descriptions: List[FieldDescription], meta_csv_data: MetaCSVData):
         self.header = header
         self._reader = reader
         self._source = source
         self._map_row = map_row
         self._descriptions = descriptions
-        self.data = data
+        self.meta_csv_data = meta_csv_data
         self._first = True
 
     def __iter__(self) -> "MetaCSVReader":
