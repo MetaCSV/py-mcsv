@@ -17,6 +17,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from datetime import date, datetime
+from decimal import Decimal
 from enum import Enum
 from io import StringIO
 from typing import Generic, TextIO, Type
@@ -61,3 +63,21 @@ class FieldDescription(ABC, Generic[T]):
         o = StringIO()
         self.render(o)
         return o.getvalue()
+
+
+def data_type_to_python_type(data_type: DataType) -> Type:
+    return {
+        DataType.BOOLEAN: bool, DataType.CURRENCY_INTEGER: int,
+        DataType.CURRENCY_DECIMAL: Decimal, DataType.DATE: date,
+        DataType.DATETIME: datetime, DataType.DECIMAL: Decimal,
+        DataType.FLOAT: float, DataType.INTEGER: int,
+        DataType.PERCENTAGE_DECIMAL: Decimal,
+        DataType.PERCENTAGE_FLOAT: float, DataType.TEXT: str
+    }.get(data_type, str)
+
+
+def python_type_to_data_type(python_type: Type) -> "DataType":
+    return {bool: DataType.BOOLEAN, date: DataType.BOOLEAN,
+            datetime: DataType.DATETIME, Decimal: DataType.DECIMAL,
+            float: DataType.FLOAT, int: DataType.INTEGER,
+            str: DataType.TEXT}.get(python_type, DataType.OBJECT)

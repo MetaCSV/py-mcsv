@@ -47,6 +47,8 @@ from mcsv.util import render, none_to_empty, T
 
 
 class BooleanFieldDescription(FieldDescription[bool]):
+    INSTANCE = None
+
     def __init__(self, true_word: str, false_word: str):
         self._true_word = true_word
         self._false_word = false_word
@@ -73,6 +75,8 @@ class BooleanFieldDescription(FieldDescription[bool]):
 
 
 class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
+    INSTANCE = None
+
     def __init__(self, pre: Optional[bool], currency: Optional[str],
                  decimal_description: FieldDescription[Decimal]):
         self._pre = pre
@@ -104,6 +108,8 @@ class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
 
 
 class CurrencyIntegerFieldDescription(FieldDescription):
+    INSTANCE = None
+
     def __init__(self, pre: Optional[bool], currency: Optional[str],
                  integer_description: FieldDescription):
         self._pre = pre
@@ -135,6 +141,8 @@ class CurrencyIntegerFieldDescription(FieldDescription):
 
 
 class DateFieldDescription(FieldDescription[date]):
+    INSTANCE = None
+
     def __init__(self, date_format: str, locale_name: Optional[str] = None):
         self._date_format = date_format
         self._locale_name = locale_name
@@ -165,6 +173,8 @@ class DateFieldDescription(FieldDescription[date]):
 
 
 class DatetimeFieldDescription(FieldDescription[datetime]):
+    INSTANCE = None
+
     def __init__(self, date_format: str, locale_name: Optional[str] = None):
         self._date_format = date_format
         self._locale_name = locale_name
@@ -195,6 +205,12 @@ class DatetimeFieldDescription(FieldDescription[datetime]):
 
 
 class DecimalFieldDescription(FieldDescription[Decimal]):
+    INSTANCE = None
+
+    def __init__(self, thousand_sep: Optional[str], decimal_sep: str):
+        self._thousand_sep = thousand_sep
+        self._decimal_sep = decimal_sep
+
     def render(self, out: TextIO):
         render(out, "decimal", none_to_empty(self._thousand_sep),
                self._decimal_sep)
@@ -209,16 +225,14 @@ class DecimalFieldDescription(FieldDescription[Decimal]):
     def get_python_type(self) -> Type:
         return Decimal
 
-    def __init__(self, thousand_sep: Optional[str], decimal_sep: str):
-        self._thousand_sep = thousand_sep
-        self._decimal_sep = decimal_sep
-
     def __repr__(self):
         return (f"DecimalFieldDescription({repr(self._thousand_sep)}, "
                 f"{repr(self._decimal_sep)})")
 
 
 class FloatFieldDescription(FieldDescription[float]):
+    INSTANCE = None
+
     def __init__(self, thousand_sep: Optional[str], decimal_sep: str):
         self._thousand_sep = thousand_sep
         self._decimal_sep = decimal_sep
@@ -243,6 +257,8 @@ class FloatFieldDescription(FieldDescription[float]):
 
 
 class IntegerFieldDescription(FieldDescription[int]):
+    INSTANCE = None
+
     def __init__(self, thousand_sep: Optional[str] = None):
         self._thousand_sep = thousand_sep
 
@@ -269,6 +285,8 @@ class IntegerFieldDescription(FieldDescription[int]):
 
 
 class PercentageFloatFieldDescription(FieldDescription[float]):
+    INSTANCE = None
+
     def __init__(self, pre: bool, sign: Optional[str],
                  float_description: FieldDescription[float]):
         self._pre = pre
@@ -299,6 +317,8 @@ class PercentageFloatFieldDescription(FieldDescription[float]):
 
 
 class PercentageDecimalFieldDescription(FieldDescription[Decimal]):
+    INSTANCE = None
+
     def __init__(self, pre: bool, sign: Optional[str],
                  decimal_description: FieldDescription[Decimal]):
         self._pre = pre
@@ -348,5 +368,36 @@ class TextFieldDescription(FieldDescription[str]):
         return "TextFieldDescription.INSTANCE"
 
 
+# Here are the canonical forms
+BooleanFieldDescription.INSTANCE = BooleanFieldDescription("true", "false")
+CurrencyIntegerFieldDescription.INSTANCE = CurrencyIntegerFieldDescription(
+    None, None, IntegerFieldDescription.INSTANCE)
+CurrencyDecimalFieldDescription.INSTANCE = CurrencyDecimalFieldDescription(
+    None, None, DecimalFieldDescription.INSTANCE)
+DateFieldDescription.INSTANCE = DateFieldDescription("yyyy-MM-dd")
+DatetimeFieldDescription.INSTANCE = DatetimeFieldDescription(
+    "yyyy-MM-dd'T'HH:mm:ss")
+DecimalFieldDescription.INSTANCE = DecimalFieldDescription(None, ".")
+FloatFieldDescription.INSTANCE = FloatFieldDescription(None, ".")
 IntegerFieldDescription.INSTANCE = IntegerFieldDescription()
+PercentageDecimalFieldDescription.INSTANCE = PercentageDecimalFieldDescription(
+    False, "%", DecimalFieldDescription.INSTANCE)
+PercentageFloatFieldDescription.INSTANCE = PercentageFloatFieldDescription(
+    False, "%", FloatFieldDescription.INSTANCE)
 TextFieldDescription.INSTANCE = TextFieldDescription()
+
+
+def data_type_to_field_description(data_type: DataType) -> FieldDescription:
+    return {
+        DataType.BOOLEAN: BooleanFieldDescription.INSTANCE,
+        DataType.CURRENCY_INTEGER: CurrencyIntegerFieldDescription.INSTANCE,
+        DataType.CURRENCY_DECIMAL: CurrencyDecimalFieldDescription.INSTANCE,
+        DataType.DATE: DateFieldDescription.INSTANCE,
+        DataType.DATETIME: DatetimeFieldDescription.INSTANCE,
+        DataType.DECIMAL: DecimalFieldDescription.INSTANCE,
+        DataType.FLOAT: FloatFieldDescription.INSTANCE,
+        DataType.INTEGER: IntegerFieldDescription.INSTANCE,
+        DataType.PERCENTAGE_DECIMAL: PercentageDecimalFieldDescription.INSTANCE,
+        DataType.PERCENTAGE_FLOAT: PercentageFloatFieldDescription.INSTANCE,
+        DataType.TEXT: TextFieldDescription.INSTANCE
+    }.get(data_type, TextFieldDescription.INSTANCE)

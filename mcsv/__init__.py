@@ -17,3 +17,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .reader import open_csv, open_dict_csv
+from .field_description import (FieldDescription, python_type_to_data_type,
+                                data_type_to_python_type)
+from .field_descriptions import data_type_to_field_description

@@ -19,6 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import csv
 from contextlib import contextmanager
+from decimal import Decimal
 from locale import getlocale, LC_TIME, setlocale
 from typing import TextIO, TypeVar
 
@@ -189,7 +190,6 @@ class rfc4180_dialect(csv.Dialect):
 
 RFC4180_DIALECT = rfc4180_dialect()
 csv.register_dialect("RFC4180_DIALECT", RFC4180_DIALECT)
-
 
 if __name__ == "__main__":
     import doctest
