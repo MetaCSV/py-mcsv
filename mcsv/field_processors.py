@@ -131,6 +131,9 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
             raise MetaCSVReadException(e.args[0])
 
     def to_string(self, value: Optional[T]) -> str:
+        if value is None:
+            return self._null_value
+
         if self._locale_name is None:
             return value.strftime(self._date_format)
         else:
@@ -145,7 +148,6 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
             if e.args:
                 msg = e.args[0]
                 unconverted, chars = msg.split(": ", maxsplit=2)
-                print(text[:-len(chars)])
                 if unconverted == "unconverted data remains":
                     return strptime(text[:-len(chars)], self._date_format)
             raise

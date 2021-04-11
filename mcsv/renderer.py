@@ -35,7 +35,7 @@ class MetaCSVRenderer:
             return MetaCSVRenderer._create_from_dest(dest, minimal)
         elif isinstance(dest, (typing.BinaryIO, io.RawIOBase,
                                io.BufferedIOBase)):
-            dest = io.TextIOWrapper(dest, encoding="utf-8", newline="\r\n")
+            dest = io.TextIOWrapper(dest, encoding="utf-8", newline="")
             return MetaCSVRenderer._create_from_dest(dest, minimal)
         elif isinstance(dest, Path):
             return MetaCSVRenderer._create_from_path(dest, minimal)
@@ -43,9 +43,10 @@ class MetaCSVRenderer:
             return MetaCSVRenderer._create_from_path(Path(dest), minimal)
 
     @staticmethod
-    def _create_from_path(path, minimal):
-        with path.open("w", newline="\r\n") as dest:
-            return MetaCSVRenderer._create_from_dest(dest, minimal)
+    def _create_from_path(path: Path, minimal: bool):
+        # TODO: never closed
+        dest = path.open("w", newline="")
+        return MetaCSVRenderer._create_from_dest(dest, minimal)
 
     @staticmethod
     def _create_from_dest(dest, minimal):
