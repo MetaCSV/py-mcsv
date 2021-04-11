@@ -31,9 +31,9 @@ class MetaCSVRenderer:
     @staticmethod
     def create(dest: Union[str, Path, typing.TextIO, typing.BinaryIO],
                minimal=True) -> "MetaCSVRenderer":
-        if isinstance(dest, (typing.IO[str], io.TextIOBase)):
+        if isinstance(dest, (typing.TextIO, io.TextIOBase)):
             return MetaCSVRenderer._create_from_dest(dest, minimal)
-        elif isinstance(dest, (typing.IO[bytes], io.RawIOBase,
+        elif isinstance(dest, (typing.BinaryIO, io.RawIOBase,
                                io.BufferedIOBase)):
             dest = io.TextIOWrapper(dest, encoding="utf-8", newline="\r\n")
             return MetaCSVRenderer._create_from_dest(dest, minimal)
