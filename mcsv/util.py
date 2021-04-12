@@ -217,7 +217,7 @@ def open_file_like(file: FileLike, mode: str = "r",
     :param encoding: optional encoding
     """
     if isinstance(file, (str, Path)):
-        with open(file, "r", encoding=encoding, *args, **kwargs) as f:
+        with open(file, mode, encoding=encoding, *args, **kwargs) as f:
             yield f
     elif isinstance(file, (TextIO, TextIOBase)):
         yield file

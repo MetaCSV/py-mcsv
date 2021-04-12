@@ -109,11 +109,20 @@ class MetaCSVWriterFactory:
 def open_csv_writer(file: FileLike,
                     data: MetaCSVData,
                     meta_file: Optional[FileLike] = None) -> MetaCSVWriter:
+    with _open_writer(file, data, meta_file) as dest:
+        yield MetaCSVWriterFactory(data).writer(dest)
+
+
+@contextmanager
+def _open_writer(file: FileLike,
+                 data: MetaCSVData,
+                 meta_file: Optional[FileLike] = None):
     if meta_file is None:
         meta_file = to_meta_path(file)
-    MetaCSVRenderer.create(meta_file).write(data)
+    with meta_file.open("w") as meta_dest:
+        MetaCSVRenderer.create(meta_dest).write(data)
     with open_file_like(file, "w", encoding=data.encoding) as dest:
-        yield MetaCSVWriterFactory(data).writer(dest)
+        yield dest
 
 
 @contextmanager
@@ -122,8 +131,5 @@ def open_dict_csv_writer(file: FileLike,
                          data: MetaCSVData,
                          meta_file: Optional[FileLike] = None
                          ) -> MetaCSVDictWriter:
-    if meta_file is None:
-        meta_file = to_meta_path(file)
-    MetaCSVRenderer.create(meta_file).write(data)
-    with open_file_like(file, "w", encoding=data.encoding) as dest:
+    with _open_writer(file, data, meta_file) as dest:
         yield MetaCSVWriterFactory(data).dict_writer(dest, header)
