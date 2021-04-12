@@ -20,8 +20,10 @@
 import csv
 from contextlib import contextmanager
 from decimal import Decimal
+from io import TextIOBase, IOBase, TextIOWrapper
 from locale import getlocale, LC_TIME, setlocale
-from typing import TextIO, TypeVar
+from pathlib import Path
+from typing import TextIO, TypeVar, Union, BinaryIO
 
 T = TypeVar('T')
 
@@ -190,6 +192,40 @@ class rfc4180_dialect(csv.Dialect):
 
 RFC4180_DIALECT = rfc4180_dialect()
 csv.register_dialect("RFC4180_DIALECT", RFC4180_DIALECT)
+
+
+def to_meta_path(path):
+    if isinstance(path, Path):
+        pass
+    elif isinstance(path, str):
+        path = Path(path)
+    else:
+        raise ValueError("Can't find the MetaCSV file")
+    return path.with_suffix(".mcsv")
+
+
+FileLike = Union[str, Path, BinaryIO, TextIO]
+
+
+@contextmanager
+def open_file_like(file: FileLike, mode: str = "r",
+                encoding: str = "utf-8", *args, **kwargs):
+    """
+    Open a source of characters with a contexte manager
+    :param file: a file name, file source, text io or binary io
+    :param mode: r or w
+    :param encoding: optional encoding
+    """
+    if isinstance(file, (str, Path)):
+        with open(file, "r", encoding=encoding, *args, **kwargs) as f:
+            yield f
+    elif isinstance(file, (TextIO, TextIOBase)):
+        yield file
+    elif isinstance(file, (BinaryIO, IOBase)):
+        yield TextIOWrapper(file, encoding=encoding)
+    else:
+        raise ValueError(file)
+
 
 if __name__ == "__main__":
     import doctest

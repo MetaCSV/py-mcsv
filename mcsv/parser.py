@@ -19,40 +19,28 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-import io
 import logging
-from typing import (Union, List, BinaryIO,
-                    TextIO, Optional, Callable, Tuple)
-from pathlib import Path
+from typing import (List, Optional, Callable, Tuple)
 
 from mcsv.col_type_parser import ColTypeParser
 from mcsv.field_description import FieldDescription
 from mcsv.meta_csv_data import MetaCSVDataBuilder, MetaCSVData
-from mcsv.util import split_parameters, RFC4180_DIALECT
+from mcsv.util import (split_parameters, RFC4180_DIALECT, FileLike,
+                       open_file_like)
 
 
 class MetaCSVParser:
-    def __init__(self, meta_path: Union[str, Path, BinaryIO, TextIO],
+    def __init__(self, meta: FileLike,
                  create_object_description: Optional[Callable[
                      [Tuple[str]], FieldDescription]] = None):
-        self._meta_path = meta_path
+        self._meta = meta
         self._logger = logging.getLogger("py-mcsv")
         self._col_type_parser = ColTypeParser(create_object_description)
         self._meta_csv_builder = MetaCSVDataBuilder()
 
     def parse(self) -> MetaCSVData:
-        if isinstance(self._meta_path, (str, Path)):
-            with open(self._meta_path, "r", encoding="utf-8") as source:
+        with open_file_like(self._meta, "r", encoding="utf-8") as source:
                 self._parse_source(source)
-        elif isinstance(self._meta_path, io.TextIOBase):
-            self._parse_source(self._meta_path)
-        elif isinstance(self._meta_path, (io.RawIOBase, io.BufferedIOBase)):
-            self._parse_source(
-                io.TextIOWrapper(self._meta_path, encoding="utf-8"))
-        else:
-            raise TypeError(
-                f"meta_path {self._meta_path} ({type(self._meta_path)})")
-
         return self._meta_csv_builder.build()
 
     def _parse_source(self, source):

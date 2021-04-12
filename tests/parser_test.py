@@ -28,69 +28,70 @@ from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.field_processor import FieldProcessor
 from mcsv.field_processors import text_or_none, ReadError
-from mcsv.reader import get_reader_factory, open_dict_csv
+from mcsv.reader import open_dict_csv_reader, MetaCSVReader, \
+    MetaCSVReaderFactory
 from mcsv.util import T, render
 
 
 class ParserTest(unittest.TestCase):
     def test_meta(self):
-        reader = get_reader_factory(
-            self._get_fixture("meta_csv.mcsv")).dict_reader(
-            self._get_fixture("meta_csv.mcsv"))
-        self.assertEqual({'domain': DataType.TEXT, 'key': DataType.TEXT,
-                          'value': DataType.TEXT},
-                         reader.get_types())
-        self.assertEqual(
-            {'domain': 'file', 'key': 'encoding', 'value': 'utf-8'},
-            next(reader))
+        with open_dict_csv_reader(self._get_fixture("meta_csv.mcsv"),
+                                  self._get_fixture("meta_csv.mcsv")) as reader:
+            self.assertEqual({'domain': DataType.TEXT, 'key': DataType.TEXT,
+                              'value': DataType.TEXT},
+                             reader.get_types())
+            self.assertEqual(
+                {'domain': 'file', 'key': 'encoding', 'value': 'utf-8'},
+                next(reader))
 
     def test_bal(self):
-        reader = open_dict_csv(self._get_fixture("20201001-bal-216402149.csv"))
-        self.assertEqual({
-            'cle_interop': DataType.TEXT,
-            'commune_nom': DataType.TEXT,
-            'complement': DataType.TEXT,
-            'date_der_maj': DataType.DATE,
-            'lat': DataType.FLOAT,
-            'long': DataType.FLOAT,
-            'numero': DataType.INTEGER,
-            'position': DataType.TEXT,
-            'refparc': DataType.TEXT,
-            'source': DataType.TEXT,
-            'suffixe': DataType.TEXT,
-            'uid_adresse': DataType.TEXT,
-            'voie_nom': DataType.TEXT,
-            'voie_nom_eu': DataType.TEXT,
-            'x': DataType.FLOAT,
-            'y': DataType.FLOAT
-        }, reader.get_types())
-        self.assertEqual(
-            {'cle_interop': '64214_0010_00700',
-             'commune_nom': 'Espès-undurein',
-             'complement': None,
-             'date_der_maj': datetime.date(2020, 6, 11),
-             'lat': 43.28315047649357,
-             'long': -0.8748110149745267,
-             'numero': 700,
-             'position': 'entrée',
-             'refparc': 'ZB0188',
-             'source': 'Commune de Espès-undurein',
-             'suffixe': None,
-             'uid_adresse': None,
-             'voie_nom': 'Route du Pays de Soule',
-             'voie_nom_eu': 'Xiberoko errepidea',
-             'x': 385432.96,
-             'y': 6250383.75},
-            next(reader))
+        with open_dict_csv_reader(
+                self._get_fixture("20201001-bal-216402149.csv")) as reader:
+            self.assertEqual({
+                'cle_interop': DataType.TEXT,
+                'commune_nom': DataType.TEXT,
+                'complement': DataType.TEXT,
+                'date_der_maj': DataType.DATE,
+                'lat': DataType.FLOAT,
+                'long': DataType.FLOAT,
+                'numero': DataType.INTEGER,
+                'position': DataType.TEXT,
+                'refparc': DataType.TEXT,
+                'source': DataType.TEXT,
+                'suffixe': DataType.TEXT,
+                'uid_adresse': DataType.TEXT,
+                'voie_nom': DataType.TEXT,
+                'voie_nom_eu': DataType.TEXT,
+                'x': DataType.FLOAT,
+                'y': DataType.FLOAT
+            }, reader.get_types())
+            self.assertEqual(
+                {'cle_interop': '64214_0010_00700',
+                 'commune_nom': 'Espès-undurein',
+                 'complement': None,
+                 'date_der_maj': datetime.date(2020, 6, 11),
+                 'lat': 43.28315047649357,
+                 'long': -0.8748110149745267,
+                 'numero': 700,
+                 'position': 'entrée',
+                 'refparc': 'ZB0188',
+                 'source': 'Commune de Espès-undurein',
+                 'suffixe': None,
+                 'uid_adresse': None,
+                 'voie_nom': 'Route du Pays de Soule',
+                 'voie_nom_eu': 'Xiberoko errepidea',
+                 'x': 385432.96,
+                 'y': 6250383.75},
+                next(reader))
 
     def test_self_contained_no_types(self):
-        reader = open_dict_csv(self._get_fixture("example.csv"))
-        self.assertEqual(
-            [{'count': 15, 'date': datetime.date(2020, 11, 21),
-              'name': 'foo'},
-             {'count': -8, 'date': datetime.date(2020, 11, 22),
-              'name': 'foo'}],
-            list(reader))
+        with open_dict_csv_reader(self._get_fixture("example.csv")) as reader:
+            self.assertEqual(
+                [{'count': 15, 'date': datetime.date(2020, 11, 21),
+                  'name': 'foo'},
+                 {'count': -8, 'date': datetime.date(2020, 11, 22),
+                  'name': 'foo'}],
+                list(reader))
 
     def _get_fixture(self, fixture_name: str) -> str:
         return os.path.abspath(
@@ -140,70 +141,69 @@ class ParserTest(unittest.TestCase):
                 urllib.request.urlopen(
                     examples_dir + "example1.csv") as csv_source:
 
-            reader = get_reader_factory(mcsv_source,
-                                        create_object_description,
-                                        on_error="wrap").dict_reader(
-                csv_source)
-            self.assertEqual({
-                'a boolean': DataType.BOOLEAN,
-                'a currency': DataType.CURRENCY_INTEGER,
-                'another currency': DataType.CURRENCY_DECIMAL,
-                'a date': DataType.DATE,
-                'a datetime': DataType.DATETIME,
-                'a decimal': DataType.DECIMAL,
-                'a float': DataType.FLOAT,
-                'an integer': DataType.INTEGER,
-                'a percentage': DataType.PERCENTAGE_FLOAT,
-                'another percentage': DataType.PERCENTAGE_DECIMAL,
-                'a text': DataType.TEXT,
-                'an URL': DataType.OBJECT,
-            },
-                reader.get_types())
-            self.assertEqual(
-                {'a boolean': True,
-                 'a currency': 5,
-                 'a date': datetime.date(1975, 4, 20),
-                 'a datetime': datetime.datetime(1975, 4, 20, 13, 45),
-                 'a decimal': Decimal('10.3'),
-                 'a float': 1232.0,
-                 'a percentage': 0.56,
-                 'a text': 'meta csv |',
-                 'an URL': ParseResult(scheme='https', netloc='github.com',
-                                       path='/jferard', params='', query='',
-                                       fragment=''),
-                 'an integer': 56,
-                 'another currency': Decimal('10.3'),
-                 'another percentage': Decimal('0.782')},
-                next(reader))
-            self.assertEqual(
-                {'a boolean': None,
-                 'a currency': 17,
-                 'a date': datetime.date(2017, 11, 21),
-                 'a datetime': None,
-                 'a decimal': Decimal('1.03'),
-                 'a float': -2.5,
-                 'a percentage': 0.58,
-                 'a text': '"java-mcsv"',
-                 'an URL': None,
-                 'an integer': 76,
-                 'another currency': Decimal('10.8'),
-                 'another percentage': Decimal('0.182')},
-                next(reader))
-            self.assertEqual(
-                {'a boolean': False,
-                 'a currency': ReadError("7",
-                                         "currency/€/post/integer"),
-                 'a date': datetime.date(2003, 6, 3),
-                 'a datetime': None,
-                 'a decimal': Decimal('32.5'),
-                 'a float': -2456.5,
-                 'a percentage': 0.85,
-                 'a text': 'py-mcsv',
-                 'an URL': None,
-                 'an integer': 1786,
-                 'another currency': Decimal('17.8'),
-                 'another percentage': Decimal('0.128')},
-                next(reader))
+            with open_dict_csv_reader(csv_source, mcsv_source,
+                                      create_object_description,
+                                      on_error="wrap") as reader:
+                self.assertEqual({
+                    'a boolean': DataType.BOOLEAN,
+                    'a currency': DataType.CURRENCY_INTEGER,
+                    'another currency': DataType.CURRENCY_DECIMAL,
+                    'a date': DataType.DATE,
+                    'a datetime': DataType.DATETIME,
+                    'a decimal': DataType.DECIMAL,
+                    'a float': DataType.FLOAT,
+                    'an integer': DataType.INTEGER,
+                    'a percentage': DataType.PERCENTAGE_FLOAT,
+                    'another percentage': DataType.PERCENTAGE_DECIMAL,
+                    'a text': DataType.TEXT,
+                    'an URL': DataType.OBJECT,
+                },
+                    reader.get_types())
+                self.assertEqual(
+                    {'a boolean': True,
+                     'a currency': 5,
+                     'a date': datetime.date(1975, 4, 20),
+                     'a datetime': datetime.datetime(1975, 4, 20, 13, 45),
+                     'a decimal': Decimal('10.3'),
+                     'a float': 1232.0,
+                     'a percentage': 0.56,
+                     'a text': 'meta csv |',
+                     'an URL': ParseResult(scheme='https', netloc='github.com',
+                                           path='/jferard', params='', query='',
+                                           fragment=''),
+                     'an integer': 56,
+                     'another currency': Decimal('10.3'),
+                     'another percentage': Decimal('0.782')},
+                    next(reader))
+                self.assertEqual(
+                    {'a boolean': None,
+                     'a currency': 17,
+                     'a date': datetime.date(2017, 11, 21),
+                     'a datetime': None,
+                     'a decimal': Decimal('1.03'),
+                     'a float': -2.5,
+                     'a percentage': 0.58,
+                     'a text': '"java-mcsv"',
+                     'an URL': None,
+                     'an integer': 76,
+                     'another currency': Decimal('10.8'),
+                     'another percentage': Decimal('0.182')},
+                    next(reader))
+                self.assertEqual(
+                    {'a boolean': False,
+                     'a currency': ReadError("7",
+                                             "currency/€/post/integer"),
+                     'a date': datetime.date(2003, 6, 3),
+                     'a datetime': None,
+                     'a decimal': Decimal('32.5'),
+                     'a float': -2456.5,
+                     'a percentage': 0.85,
+                     'a text': 'py-mcsv',
+                     'an URL': None,
+                     'an integer': 1786,
+                     'another currency': Decimal('17.8'),
+                     'another percentage': Decimal('0.128')},
+                    next(reader))
 
 
 if __name__ == "__main__":

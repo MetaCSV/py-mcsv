@@ -17,45 +17,29 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-import io
-import typing
-from pathlib import Path
-from typing import Union
+from contextlib import contextmanager
+from typing import TextIO
 
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.meta_csv_data import MetaCSVData
-from mcsv.util import RFC4180_DIALECT
+from mcsv.util import RFC4180_DIALECT, FileLike, open_file_like
 
 
 class MetaCSVRenderer:
     @staticmethod
-    def create(dest: Union[str, Path, typing.TextIO, typing.BinaryIO],
-               minimal=True) -> "MetaCSVRenderer":
-        if isinstance(dest, (typing.TextIO, io.TextIOBase)):
-            return MetaCSVRenderer._create_from_dest(dest, minimal)
-        elif isinstance(dest, (typing.BinaryIO, io.RawIOBase,
-                               io.BufferedIOBase)):
-            dest = io.TextIOWrapper(dest, encoding="utf-8", newline="")
-            return MetaCSVRenderer._create_from_dest(dest, minimal)
-        elif isinstance(dest, Path):
-            return MetaCSVRenderer._create_from_path(dest, minimal)
-        elif isinstance(dest, str):
-            return MetaCSVRenderer._create_from_path(Path(dest), minimal)
-
-    @staticmethod
-    def _create_from_path(path: Path, minimal: bool):
-        # TODO: never closed
-        dest = path.open("w", newline="")
-        return MetaCSVRenderer._create_from_dest(dest, minimal)
-
-    @staticmethod
-    def _create_from_dest(dest, minimal):
+    def create(dest: TextIO, minimal=True) -> "MetaCSVRenderer":
         writer = csv.writer(dest, RFC4180_DIALECT)
         return MetaCSVRenderer(writer, minimal)
 
     def __init__(self, writer: csv.writer, minimal=True):
         self._writer = writer
         self._minimal = minimal
+
+    def write(self, data: MetaCSVData):
+        if self._minimal:
+            self._write_minimal(data)
+        else:
+            self._write_verbose(data)
 
     def _write_minimal(self, data: MetaCSVData):
         self._writer.writerow(["domain", "key", "delimiter"])
@@ -103,3 +87,9 @@ class MetaCSVRenderer:
             bool(data.dialect.skipinitialspace)).lower()])
         for i, description in data.field_description_by_index.items():
             self._writer.writerow(["data", f"col/{i}/type", str(description)])
+
+
+@contextmanager
+def open_renderer(file: FileLike, minimal: bool =True):
+    with open_file_like(file, "w", encoding="utf-8", newline="") as dest:
+        return MetaCSVRenderer.create(dest, minimal)

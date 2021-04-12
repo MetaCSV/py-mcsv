@@ -17,10 +17,9 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
-import io
-from pathlib import Path
-from typing import (Iterator, List, Any, Callable, Mapping, Union, TextIO,
-                    BinaryIO, Optional, Tuple, Type)
+from contextlib import contextmanager
+from typing import (Iterator, List, Any, Callable, Mapping, TextIO,
+                    Optional, Tuple, Type)
 
 from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
@@ -28,12 +27,14 @@ from mcsv.field_processor import FieldProcessor
 from mcsv.field_processors import MetaCSVReadException, ReadError
 from mcsv.meta_csv_data import MetaCSVData, MetaCSVDataBuilder
 from mcsv.parser import MetaCSVParser
+from mcsv.util import (to_meta_path, open_file_like, FileLike)
 
 
 class MetaCSVReader(Iterator[List[Any]]):
     def __init__(self, header: List[str], reader: csv.reader, source: TextIO,
                  map_row: Callable[[List[str]], List[Any]],
-                 descriptions: List[FieldDescription], meta_csv_data: MetaCSVData):
+                 descriptions: List[FieldDescription],
+                 meta_csv_data: MetaCSVData):
         self.header = header
         self._reader = reader
         self._source = source
@@ -104,9 +105,7 @@ class MetaCSVReaderFactory:
         self._data = data
         self._on_error = on_error
 
-    def reader(self, path: Union[str, Path, TextIO, BinaryIO]
-               ) -> MetaCSVReader:
-        source = self._get_source(path)
+    def reader(self, source: TextIO) -> MetaCSVReader:
         reader = csv.reader(source, self._data.dialect)
         header = next(reader)
         descriptions = [self._data.field_description_by_index[i]
@@ -114,11 +113,10 @@ class MetaCSVReaderFactory:
                         else TextFieldDescription.INSTANCE
                         for i in range(len(header))]
         map_row = self._get_map_row(descriptions)
-        return MetaCSVReader(header, reader, source, map_row, descriptions, 
+        return MetaCSVReader(header, reader, source, map_row, descriptions,
                              self._data)
 
-    def dict_reader(self, path: Union[str, Path]) -> MetaCSVDictReader:
-        source = self._get_source(path)
+    def dict_reader(self, source: TextIO) -> MetaCSVDictReader:
         reader = csv.reader(source, self._data.dialect)
         header = next(reader)
         descriptions = [self._data.field_description_by_index[i]
@@ -127,25 +125,6 @@ class MetaCSVReaderFactory:
                         for i in range(len(header))]
         func = self._get_map_row(descriptions)
         return MetaCSVDictReader(header, reader, source, func, descriptions)
-
-    def _get_source(self, path):
-        encoding = self._get_encoding()
-        if isinstance(path, (str, Path)):
-            source = open(path, "r", encoding=encoding)
-        elif isinstance(path, (TextIO, io.TextIOBase)):
-            source = path
-        elif isinstance(path, (BinaryIO, io.IOBase)):
-            source = io.TextIOWrapper(path, encoding=encoding)
-        else:
-            raise ValueError(path)
-        return source
-
-    def _get_encoding(self):
-        if self._data.encoding == "utf-8" and self._data.bom:
-            encoding = "utf-8-sig"
-        else:
-            encoding = self._data.encoding
-        return encoding
 
     def _get_map_row(self, descriptions: List[FieldDescription]
                      ) -> Callable[[List[str]], List[Optional[Any]]]:
@@ -201,53 +180,40 @@ MetaCSVReaderFactory.DEFAULT = MetaCSVReaderFactory(
     on_error="wrap")
 
 
-def get_reader_factory(meta_path: Union[str, Path, BinaryIO, TextIO],
-                       create_object_description: Optional[Callable[
-                           [Tuple[str]], FieldDescription]] = None,
-                       on_error: str = "wrap") -> MetaCSVReaderFactory:
-    """
-    Create a new MetaCSVReaderFactory
-
-    :param meta_path:
-    :param create_object_description:
-    :return:
-    """
-    data = MetaCSVParser(meta_path,
-                         create_object_description).parse()
-    return MetaCSVReaderFactory(data, on_error)
+@contextmanager
+def open_csv_reader(file: FileLike,
+                    meta_file: Optional[FileLike] = None,
+                    create_object_description: Optional[Callable[
+                        [Tuple[str]], FieldDescription]] = None,
+                    on_error: str = "wrap",
+                    ) -> MetaCSVReader:
+    with _open_reader(file, meta_file, create_object_description
+                      ) as (data, source):
+        yield MetaCSVReaderFactory(data, on_error).reader(source)
 
 
-def open_csv(path: Union[str, Path, BinaryIO, TextIO],
-             meta_path: Union[str, Path, BinaryIO, TextIO] = None,
-             create_object_description: Optional[Callable[
-                 [Tuple[str]], FieldDescription]] = None,
-             on_error: str = "wrap",
-             ) -> MetaCSVReader:
-    if meta_path is None:
-        meta_path = _find_meta_path(path)
-    reader_factory = get_reader_factory(meta_path, create_object_description,
-                                        on_error)
-    return reader_factory.reader(path)
-
-
-def open_dict_csv(path: Union[str, Path, BinaryIO, TextIO],
-                  meta_path: Union[str, Path, BinaryIO, TextIO] = None,
-                  create_object_description: Optional[Callable[
-                      [Tuple[str]], FieldDescription]] = None,
-                  on_error: str = "wrap",
-                  ) -> MetaCSVDictReader:
-    if meta_path is None:
-        meta_path = _find_meta_path(path)
-    reader_factory = get_reader_factory(meta_path, create_object_description,
-                                        on_error)
-    return reader_factory.dict_reader(path)
-
-
-def _find_meta_path(path):
-    if isinstance(path, Path):
-        pass
-    elif isinstance(path, str):
-        path = Path(path)
+@contextmanager
+def _open_reader(file: FileLike, meta_file: Optional[FileLike] = None,
+                 create_object_description: Optional[Callable[
+                     [Tuple[str]], FieldDescription]] = None):
+    if meta_file is None:
+        meta_file = to_meta_path(file)
+    data = MetaCSVParser(meta_file, create_object_description).parse()
+    if data.encoding == "utf-8" and data.bom:
+        encoding = "utf-8-sig"
     else:
-        raise ValueError("Can't find the MetaCSV file")
-    return path.with_suffix(".mcsv")
+        encoding = data.encoding
+    with open_file_like(file, "r", encoding=encoding) as source:
+        yield data, source
+
+
+@contextmanager
+def open_dict_csv_reader(file: FileLike,
+                         meta_file: Optional[FileLike] = None,
+                         create_object_description: Optional[Callable[
+                             [Tuple[str]], FieldDescription]] = None,
+                         on_error: str = "wrap",
+                         ) -> MetaCSVDictReader:
+    with _open_reader(file, meta_file, create_object_description
+                      ) as (data, source):
+        yield MetaCSVReaderFactory(data, on_error).dict_reader(source)

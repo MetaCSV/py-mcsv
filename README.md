@@ -88,3 +88,8 @@ You may wish to access rows as lists:
         # the first row is a header
         # the remaining rows are list of typed values
         ...
+
+
+# Testing
+
+    $ python3 -m pytest --doctest-modules
