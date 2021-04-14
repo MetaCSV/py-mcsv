@@ -120,7 +120,7 @@ class ColTypeParser:
         elif len(parameters) == 2:
             uldml_date_format, locale_name = parameters
             if "." not in locale_name:
-                locale_name += "UTF8"
+                locale_name += ".utf8"
         else:
             raise ValueError()
         c1989_date_format = date_parser.parse(uldml_date_format)

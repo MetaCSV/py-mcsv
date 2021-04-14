@@ -281,7 +281,7 @@ class IntegerFieldDescription(FieldDescription[int]):
         if self._thousand_sep is None:
             return "IntegerFieldDescription.INSTANCE"
         else:
-            return f"IntegerFieldDescription({repr(self._thousand_sep)}"
+            return f"IntegerFieldDescription({repr(self._thousand_sep)})"
 
 
 class PercentageFloatFieldDescription(FieldDescription[float]):
