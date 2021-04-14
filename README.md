@@ -91,5 +91,11 @@ You may wish to access rows as lists:
 
 
 # Testing
+Simple testing:
 
     $ python3 -m pytest --doctest-modules
+
+Full testing:
+
+    $ pip3 install pytest-cov
+    $ python3.8 -m pytest --cov-report term-missing --cov=mcsv  && python3.8 -m pytest --cov-report term-missing --cov-append --doctest-modules mcsv --cov=mcsv && flake8 mcsv/* test/*
