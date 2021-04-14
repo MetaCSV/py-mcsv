@@ -90,6 +90,6 @@ class MetaCSVRenderer:
 
 
 @contextmanager
-def open_renderer(file: FileLike, minimal: bool =True):
+def open_renderer(file: FileLike, minimal: bool = True):
     with open_file_like(file, "w", encoding="utf-8", newline="") as dest:
         return MetaCSVRenderer.create(dest, minimal)

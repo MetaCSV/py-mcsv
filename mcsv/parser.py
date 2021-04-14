@@ -40,7 +40,7 @@ class MetaCSVParser:
 
     def parse(self) -> MetaCSVData:
         with open_file_like(self._meta, "r", encoding="utf-8") as source:
-                self._parse_source(source)
+            self._parse_source(source)
         return self._meta_csv_builder.build()
 
     def _parse_source(self, source):

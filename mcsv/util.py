@@ -19,7 +19,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import csv
 from contextlib import contextmanager
-from decimal import Decimal
 from io import TextIOBase, IOBase, TextIOWrapper
 from locale import getlocale, LC_TIME, setlocale
 from pathlib import Path
@@ -209,7 +208,7 @@ FileLike = Union[str, Path, BinaryIO, TextIO]
 
 @contextmanager
 def open_file_like(file: FileLike, mode: str = "r",
-                encoding: str = "utf-8", *args, **kwargs):
+                   encoding: str = "utf-8", *args, **kwargs) -> TextIO:
     """
     Open a source of characters with a contexte manager
     :param file: a file name, file source, text io or binary io

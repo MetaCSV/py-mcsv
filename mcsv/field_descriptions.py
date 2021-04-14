@@ -397,7 +397,8 @@ def data_type_to_field_description(data_type: DataType) -> FieldDescription:
         DataType.DECIMAL: DecimalFieldDescription.INSTANCE,
         DataType.FLOAT: FloatFieldDescription.INSTANCE,
         DataType.INTEGER: IntegerFieldDescription.INSTANCE,
-        DataType.PERCENTAGE_DECIMAL: PercentageDecimalFieldDescription.INSTANCE,
+        DataType.PERCENTAGE_DECIMAL:
+            PercentageDecimalFieldDescription.INSTANCE,
         DataType.PERCENTAGE_FLOAT: PercentageFloatFieldDescription.INSTANCE,
         DataType.TEXT: TextFieldDescription.INSTANCE
     }.get(data_type, TextFieldDescription.INSTANCE)

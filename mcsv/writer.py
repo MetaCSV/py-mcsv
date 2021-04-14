@@ -20,9 +20,8 @@ import csv
 import io
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, List, BinaryIO, TextIO, Callable, Optional, Tuple
+from typing import Any, List, BinaryIO, TextIO, Callable, Optional
 
-from mcsv import FieldDescription
 from mcsv.meta_csv_data import MetaCSVData
 from mcsv.renderer import MetaCSVRenderer
 from mcsv.util import FileLike, to_meta_path, open_file_like
