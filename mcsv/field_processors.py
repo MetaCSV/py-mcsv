@@ -41,7 +41,7 @@ class ReadError:
         return f"ReadError({self.value}, {self.description})"
 
 
-def text_or_none(text: str, null_value: str) -> Optional[str]:
+def text_or_none(text: Optional[str], null_value: str) -> Optional[str]:
     if text is None:
         return None
     textcf = text.strip()
@@ -66,7 +66,7 @@ class BooleanFieldProcessor(FieldProcessor[bool]):
             raise MetaCSVReadException(f"Wrong boolean: {text}")
 
     def to_string(self, value: Optional[bool]) -> str:
-        return None if value is None else str(value).lower()
+        return self._null_value if value is None else str(value).lower()
 
 
 class CurrencyFieldProcessor(FieldProcessor[T]):
@@ -102,7 +102,7 @@ class CurrencyFieldProcessor(FieldProcessor[T]):
             return self._null_value
         v = self._number_processor.to_string(value)
         if self._pre:
-            return f"{self._currency} {v}"
+            return f"{self._currency}{v}"
         else:
             return f"{v} {self._currency}"
 

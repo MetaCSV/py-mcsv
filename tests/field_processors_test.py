@@ -21,21 +21,96 @@ from datetime import date, datetime
 from time import mktime
 
 from mcsv.date_format_converter import _DateFormatParser
-from mcsv.field_processors import DateAndDatetimeFieldProcessor
+from mcsv.field_processors import (
+    DateAndDatetimeFieldProcessor, ReadError, text_or_none,
+    BooleanFieldProcessor, MetaCSVReadException,
+    CurrencyFieldProcessor, IntegerFieldProcessor)
 
 
 class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
     def test_milliseconds(self):
         processor = DateAndDatetimeFieldProcessor(datetime.fromtimestamp,
-                                             _DateFormatParser.create().parse("yyyy-MM-dd'T'HH:mm:ss"),
-                                             "fr_FR.UTF8", "null_value")
-        self.assertEqual(datetime(2021, 1, 12, 15, 34, 25), processor.to_object("2021-01-12T15:34:25.1235"))
+                                                  _DateFormatParser.create().parse(
+                                                      "yyyy-MM-dd'T'HH:mm:ss"),
+                                                  "fr_FR.UTF8", "null_value")
+        self.assertEqual(datetime(2021, 1, 12, 15, 34, 25),
+                         processor.to_object("2021-01-12T15:34:25.1235"))
 
     def test_hours(self):
         processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
-                                             _DateFormatParser.create().parse("yyyy-MM-dd"),
-                                             "fr_FR.UTF8", "null_value")
-        self.assertEqual(date(2021, 1, 12), processor.to_object("2021-01-12T15:34:25.1235"))
+                                                  _DateFormatParser.create().parse(
+                                                      "yyyy-MM-dd"),
+                                                  "fr_FR.UTF8", "null_value")
+        self.assertEqual(date(2021, 1, 12),
+                         processor.to_object("2021-01-12T15:34:25.1235"))
+
+    def test_read_error_repr(self):
+        self.assertEqual("ReadError(0, int)", repr(ReadError(0, "int")))
+
+    def test_test_or_none(self):
+        self.assertIsNone(text_or_none(None, "NULL"))
+
+    def test_boolean_field_processor_error(self):
+        processor = BooleanFieldProcessor("true", "false", "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+    def test_boolean_field_processor(self):
+        processor = BooleanFieldProcessor("true", "false", "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_currency_field_processor(self):
+        processor = CurrencyFieldProcessor(True, "$", IntegerFieldProcessor(
+            None, "NULL"), "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_currency_field_processor_err(self):
+        processor = CurrencyFieldProcessor(True, "$", IntegerFieldProcessor(
+            None, "NULL"), "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("10€")
+
+    def test_currency_field_processor2(self):
+        processor = CurrencyFieldProcessor(True, "$", IntegerFieldProcessor(
+            None, "NULL"), "NULL")
+        self.assertIsNone(processor.to_object(None))
+
+    def test_currency_field_processor3(self):
+        processor = CurrencyFieldProcessor(True, "$", IntegerFieldProcessor(
+            None, "NULL"), "NULL")
+        self.assertEqual("$10", processor.to_string(10))
+
+    def test_currency_field_processor4(self):
+        processor = CurrencyFieldProcessor(False, "€", IntegerFieldProcessor(
+            None, "NULL"), "NULL")
+        self.assertEqual("10 €", processor.to_string(10))
+
+    def test_date_field_processor_err(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "yyyy-MM-dd", "fr_FR.utf-8",
+                                                  "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+    def test_date_field_processor_none_to_string(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "yyyy-MM-dd", "fr_FR.utf-8",
+                                                  "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_date_field_processor_locale_to_string(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "%Y-%B-%d", "fr_FR.utf-8",
+                                                  "NULL")
+        self.assertEqual("2009-février-14", processor.to_string(
+            date.fromtimestamp(1234567891)))
+
+    def test_date_field_processor_no_locale_to_string(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "%Y-%m-%d", None,
+                                                  "NULL")
+        self.assertEqual("2009-02-14", processor.to_string(
+            date.fromtimestamp(1234567891)))
 
 
 if __name__ == '__main__':
