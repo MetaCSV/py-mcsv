@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 from time import mktime
 
 from mcsv.date_format_converter import _DateFormatParser
@@ -102,15 +102,24 @@ class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
         processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
                                                   "%Y-%B-%d", "fr_FR.utf-8",
                                                   "NULL")
-        self.assertEqual("2009-février-14", processor.to_string(
-            date.fromtimestamp(1234567891)))
+        d = datetime.fromtimestamp(1234567891).astimezone(timezone.utc).date()
+        self.assertEqual("2009-février-13", processor.to_string(
+            d))
 
     def test_date_field_processor_no_locale_to_string(self):
         processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
                                                   "%Y-%m-%d", None,
                                                   "NULL")
-        self.assertEqual("2009-02-14", processor.to_string(
-            date.fromtimestamp(1234567891)))
+        d = datetime.fromtimestamp(1234567891).astimezone(timezone.utc).date()
+        self.assertEqual("2009-02-13", processor.to_string(d))
+
+    def test_datetime_field_processor_locale_to_string(self):
+        processor = DateAndDatetimeFieldProcessor(datetime.fromtimestamp,
+                                                  "%Y-%B-%d", "fr_FR.utf-8",
+                                                  "NULL")
+        d = datetime.fromtimestamp(1234567891).astimezone(timezone.utc)
+        self.assertEqual("2009-février-13", processor.to_string(
+            d))
 
 
 if __name__ == '__main__':
