@@ -26,7 +26,7 @@ from mcsv.col_type_parser import ColTypeParser
 from mcsv.field_description import FieldDescription
 from mcsv.meta_csv_data import MetaCSVDataBuilder, MetaCSVData
 from mcsv.util import (split_parameters, RFC4180_DIALECT, FileLike,
-                       open_file_like)
+                       open_file_like, unescape_line_terminator)
 
 
 class MetaCSVParser:
@@ -78,7 +78,8 @@ class MetaCSVParser:
         elif key == "bom":
             self._meta_csv_builder.bom(self._parse_boolean_value(value))
         elif key == "line_terminator":
-            self._meta_csv_builder.line_terminator(value)
+            self._meta_csv_builder.line_terminator(
+                unescape_line_terminator(value))
         else:
             raise ValueError(f"Unknown file domain key: {key}")
         pass

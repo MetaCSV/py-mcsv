@@ -22,7 +22,8 @@ from typing import TextIO
 
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.meta_csv_data import MetaCSVData
-from mcsv.util import RFC4180_DIALECT, FileLike, open_file_like
+from mcsv.util import RFC4180_DIALECT, FileLike, open_file_like, \
+    escape_line_terminator
 
 
 class MetaCSVRenderer:
@@ -53,7 +54,8 @@ class MetaCSVRenderer:
 
         if data.dialect.lineterminator != "\r\n":
             self._writer.writerow(
-                ["file", "line_terminator", data.dialect.lineterminator])
+                ["file", "line_terminator", escape_line_terminator(
+                    data.dialect.lineterminator)])
         if data.dialect.delimiter != ",":
             self._writer.writerow(["csv", "delimiter", data.dialect.delimiter])
         if not data.dialect.doublequote:
@@ -77,7 +79,8 @@ class MetaCSVRenderer:
         self._writer.writerow(["domain", "key", "delimiter"])
         self._writer.writerow(["file", "encoding", data.encoding])
         self._writer.writerow(
-            ["file", "line_terminator", data.dialect.lineterminator])
+            ["file", "line_terminator", escape_line_terminator(
+                data.dialect.lineterminator)])
         self._writer.writerow(["csv", "delimiter", data.dialect.delimiter])
         self._writer.writerow(["csv", "double_quote", str(
             bool(data.dialect.skipinitialspace)).lower()])

@@ -230,3 +230,41 @@ if __name__ == "__main__":
     import doctest
 
     doctest.testmod()
+
+
+def escape_line_terminator(lt):
+    """
+
+    >>> escape_line_terminator("\\n")
+    '\\\\n'
+
+    :param lt: the line terminator
+    :return: the escaped line terminator
+    """
+    if lt == "\n":
+        return "\\n"
+    elif lt == "\r\n":
+        return "\\r\\n"
+    elif lt == "\r":
+        return "\\r"
+    else:
+        return lt
+
+
+def unescape_line_terminator(elt):
+    """
+
+    >>> unescape_line_terminator("\\\\n")
+    '\\n'
+
+    :param elt: the escaped line terminator
+    :return: the line terminator
+    """
+    if elt == "\\n":
+        return "\n"
+    elif elt == "\\r\\n":
+        return "\r\n"
+    elif elt == "\\r":
+        return "\r"
+    else:
+        return elt
