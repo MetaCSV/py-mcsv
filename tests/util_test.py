@@ -20,7 +20,8 @@
 
 import unittest
 
-from mcsv.util import split_parameters
+from mcsv.util import split_parameters, escape_line_terminator, \
+    unescape_line_terminator
 
 
 class UtilTest(unittest.TestCase):
@@ -31,6 +32,13 @@ class UtilTest(unittest.TestCase):
     def test_bs(self):
         self.assertEqual(['DD\\mm\\yyyy', 'locale'], split_parameters(
             "DD\\mm\\yyyy/locale"))
+
+    def test_line_terminator(self):
+        raw = ["\n", "\r\n", "\r", "~"]
+        escaped = ["\\n", "\\r\\n", "\\r", "~"]
+        for r, e in zip(raw, escaped):
+            self.assertEqual(e, escape_line_terminator(r))
+            self.assertEqual(r, unescape_line_terminator(e))
 
 
 if __name__ == "__main__":
