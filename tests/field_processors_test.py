@@ -18,13 +18,15 @@
 
 import unittest
 from datetime import date, datetime, timezone, timedelta
+from decimal import Decimal
 from time import mktime
 
 from mcsv.date_format_converter import _DateFormatParser
 from mcsv.field_processors import (
     DateAndDatetimeFieldProcessor, ReadError, text_or_none,
     BooleanFieldProcessor, MetaCSVReadException,
-    CurrencyFieldProcessor, IntegerFieldProcessor)
+    CurrencyFieldProcessor, IntegerFieldProcessor, DecimalFieldProcessor,
+    FloatFieldProcessor)
 
 
 class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
@@ -98,6 +100,14 @@ class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
                                                   "NULL")
         self.assertEqual("NULL", processor.to_string(None))
 
+    def test_date_field_processor_err2(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "yyyy-MM-dd", "fr_FR.utf-8",
+                                                  "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+
     def test_date_field_processor_locale_to_string(self):
         processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
                                                   "%Y-%B-%d", "fr_FR.utf-8",
@@ -120,6 +130,64 @@ class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
         d = datetime.fromtimestamp(1234567891).astimezone(timezone.utc)
         self.assertEqual("2009-février-13", processor.to_string(
             d))
+
+    def test_decimal_field_processor_none(self):
+        processor = DecimalFieldProcessor(None, ".", "NULL")
+        self.assertIsNone(processor.to_object(None))
+
+    def test_decimal_field_processor_null(self):
+        processor = DecimalFieldProcessor(None, ".", "NULL")
+        self.assertIsNone(processor.to_object("NULL"))
+
+    def test_decimal_field_processor_ts(self):
+        processor = DecimalFieldProcessor(" ", ".", "NULL")
+        self.assertEqual(Decimal('1234.5'), processor.to_object("1 234.5"))
+
+    def test_decimal_field_processor_ds(self):
+        processor = DecimalFieldProcessor(" ", ",", "NULL")
+        self.assertEqual(Decimal('1234.5'), processor.to_object("1 234,5"))
+
+    def test_decimal_field_processor_err(self):
+        processor = DecimalFieldProcessor(" ", ",", "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+    def test_decimal_field_processor_to_string_null(self):
+        processor = DecimalFieldProcessor(" ", ",", "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_decimal_field_processor_to_string(self):
+        processor = DecimalFieldProcessor(" ", ",", "NULL")
+        self.assertEqual("1 234,5", processor.to_string(Decimal('1234.5')))
+
+    def test_float_field_processor_none(self):
+        processor = FloatFieldProcessor(None, ".", "NULL")
+        self.assertIsNone(processor.to_object(None))
+
+    def test_float_field_processor_null(self):
+        processor = FloatFieldProcessor(None, ".", "NULL")
+        self.assertIsNone(processor.to_object("NULL"))
+
+    def test_float_field_processor_ts(self):
+        processor = FloatFieldProcessor(" ", ".", "NULL")
+        self.assertEqual(1234.5, processor.to_object("1 234.5"))
+
+    def test_float_field_processor_ds(self):
+        processor = FloatFieldProcessor(" ", ",", "NULL")
+        self.assertEqual(1234.5, processor.to_object("1 234,5"))
+
+    def test_float_field_processor_err(self):
+        processor = FloatFieldProcessor(" ", ",", "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+    def test_float_field_processor_to_string_null(self):
+        processor = FloatFieldProcessor(" ", ",", "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_float_field_processor_to_string(self):
+        processor = FloatFieldProcessor(" ", ",", "NULL")
+        self.assertEqual("1 234,5", processor.to_string(1234.5))
 
 
 if __name__ == '__main__':

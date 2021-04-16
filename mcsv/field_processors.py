@@ -15,7 +15,7 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from time import strptime, mktime
 from typing import Optional, Callable
 
@@ -147,9 +147,9 @@ class DateAndDatetimeFieldProcessor(FieldProcessor[T]):
         except ValueError as e:
             if e.args:
                 msg = e.args[0]
-                unconverted, chars = msg.split(": ", maxsplit=2)
+                unconverted, *chars = msg.split(": ", maxsplit=2)
                 if unconverted == "unconverted data remains":
-                    return strptime(text[:-len(chars)], self._date_format)
+                    return strptime(text[:-len(chars[0])], self._date_format)
             raise
 
 
@@ -161,20 +161,18 @@ class DecimalFieldProcessor(FieldProcessor[Decimal]):
         self._null_value = null_value
 
     def to_object(self, text: str) -> Optional[Decimal]:
+        text = text_or_none(text, self._null_value)
         if text is None:
             return None
-        text = text.strip().casefold()
-        if text == self._null_value:
-            return None
-        else:
-            try:
-                if self._thousand_separator:
-                    text = text.replace(self._thousand_separator, "")
-                if self._decimal_separator != ".":
-                    text = text.replace(self._decimal_separator, ".")
-                return Decimal(text)
-            except ValueError as e:
-                raise MetaCSVReadException(e)
+
+        try:
+            if self._thousand_separator:
+                text = text.replace(self._thousand_separator, "")
+            if self._decimal_separator != ".":
+                text = text.replace(self._decimal_separator, ".")
+            return Decimal(text)
+        except InvalidOperation as e:
+            raise MetaCSVReadException(e)
 
     def to_string(self, value: Optional[Decimal]) -> str:
         if value is None:
@@ -191,20 +189,18 @@ class FloatFieldProcessor(FieldProcessor[float]):
         self._null_value = null_value
 
     def to_object(self, text: str) -> Optional[float]:
+        text = text_or_none(text, self._null_value)
         if text is None:
             return None
-        text = text.strip().casefold()
-        if text == self._null_value:
-            return None
-        else:
-            try:
-                if self._thousand_separator:
-                    text = text.replace(self._thousand_separator, "")
-                if self._decimal_separator != ".":
-                    text = text.replace(self._decimal_separator, ".")
-                return float(text)
-            except ValueError as e:
-                raise MetaCSVReadException(e)
+
+        try:
+            if self._thousand_separator:
+                text = text.replace(self._thousand_separator, "")
+            if self._decimal_separator != ".":
+                text = text.replace(self._decimal_separator, ".")
+            return float(text)
+        except ValueError as e:
+            raise MetaCSVReadException(e)
 
     def to_string(self, value: Optional[float]) -> str:
         if value is None:
