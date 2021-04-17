@@ -1,5 +1,5 @@
 #  py-mcsv - A MetaCSV parser for Python
-#      Copyright (C) 2020 J. Férard <https://github.com/jferard>
+#      Copyright (C) 2020-2021 J. Férard <https://github.com/jferard>
 #
 #   This file is part of py-mcsv.
 #
@@ -17,13 +17,25 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+from io import StringIO
 
-from mcsv.field_descriptions import IntegerFieldDescription
+from mcsv.field_descriptions import IntegerFieldDescription, \
+    BooleanFieldDescription, CurrencyIntegerFieldDescription
 
 
 class FieldDescriptionTest(unittest.TestCase):
+    def test_render_boolean(self):
+        s = StringIO()
+        BooleanFieldDescription.INSTANCE.render(s)
+        self.assertEqual("boolean/true/false", s.getvalue())
+
     def test_type(self):
         self.assertEqual(int, IntegerFieldDescription().get_python_type())
+
+    def test_render_currency(self):
+        s = StringIO()
+        CurrencyIntegerFieldDescription(False, "€", IntegerFieldDescription.INSTANCE).render(s)
+        self.assertEqual("currency/post/€/integer", s.getvalue())
 
 
 if __name__ == '__main__':

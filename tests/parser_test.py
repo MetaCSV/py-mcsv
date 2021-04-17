@@ -192,7 +192,7 @@ class ParserTest(unittest.TestCase):
                 self.assertEqual(
                     {'a boolean': False,
                      'a currency': ReadError("7",
-                                             "currency/€/post/integer"),
+                                             "currency/post/€/integer"),
                      'a date': datetime.date(2003, 6, 3),
                      'a datetime': None,
                      'a decimal': Decimal('32.5'),

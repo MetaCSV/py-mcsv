@@ -19,9 +19,10 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+from io import StringIO
 
 from mcsv.util import split_parameters, escape_line_terminator, \
-    unescape_line_terminator
+    unescape_line_terminator, render
 
 
 class UtilTest(unittest.TestCase):
@@ -39,6 +40,36 @@ class UtilTest(unittest.TestCase):
         for r, e in zip(raw, escaped):
             self.assertEqual(e, escape_line_terminator(r))
             self.assertEqual(r, unescape_line_terminator(e))
+
+    def test_render0(self):
+        s = StringIO()
+        render(s)
+        self.assertEqual("", s.getvalue())
+
+    def test_render1(self):
+        s = StringIO()
+        render(s, "foo")
+        self.assertEqual("foo", s.getvalue())
+
+    def test_render2(self):
+        s = StringIO()
+        render(s, "foo", "bar")
+        self.assertEqual("foo/bar", s.getvalue())
+
+    def test_render3(self):
+        s = StringIO()
+        render(s, "foo", "bar", "baz")
+        self.assertEqual("foo/bar/baz", s.getvalue())
+
+    def test_render_blanks(self):
+        s = StringIO()
+        render(s, "foo", "", "")
+        self.assertEqual("foo", s.getvalue())
+
+    def test_render_only_blanks(self):
+        s = StringIO()
+        render(s, "", "", "")
+        self.assertEqual("", s.getvalue())
 
 
 if __name__ == "__main__":

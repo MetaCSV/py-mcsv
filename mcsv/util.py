@@ -64,15 +64,15 @@ def split_parameters(parameters):
 
 
 def render(out: TextIO, *values: str):
-    n = len(values) - 1
-    while n > 0 and values[n] == "":
-        n -= 1
-    if n == 0:
+    last = len(values) - 1
+    while last > 0 and values[last] == "":
+        last -= 1
+    if last < 0:
         return
-    for i in range(0, n - 1):
+    for i in range(0, last):
         render_escaped(out, values[i])
         out.write("/")
-    out.write(values[n - 1])
+    out.write(values[last])
 
 
 def render_escaped(out, value: str):
