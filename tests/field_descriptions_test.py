@@ -17,25 +17,101 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
+from datetime import date
+from decimal import Decimal
 from io import StringIO
 
 from mcsv.field_descriptions import IntegerFieldDescription, \
-    BooleanFieldDescription, CurrencyIntegerFieldDescription
+    BooleanFieldDescription, CurrencyIntegerFieldDescription, \
+    CurrencyDecimalFieldDescription, DecimalFieldDescription, \
+    DateFieldDescription
 
 
-class FieldDescriptionTest(unittest.TestCase):
+class BooleanFieldDescriptionTest(unittest.TestCase):
     def test_render_boolean(self):
         s = StringIO()
         BooleanFieldDescription.INSTANCE.render(s)
         self.assertEqual("boolean/true/false", s.getvalue())
 
+    def test_render_boolean_no_false(self):
+        s = StringIO()
+        BooleanFieldDescription("X", "").render(s)
+        self.assertEqual("boolean/X", s.getvalue())
+
     def test_type(self):
-        self.assertEqual(int, IntegerFieldDescription().get_python_type())
+        self.assertEqual(bool,
+                         BooleanFieldDescription.INSTANCE.get_python_type())
+
+
+class CurrencyDecimalFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = CurrencyDecimalFieldDescription(
+            False, "€", DecimalFieldDescription.INSTANCE)
 
     def test_render_currency(self):
         s = StringIO()
-        CurrencyIntegerFieldDescription(False, "€", IntegerFieldDescription.INSTANCE).render(s)
+        self.description.render(s)
+        self.assertEqual("currency/post/€/decimal//.", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(Decimal, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual(("CurrencyDecimalFieldDescription("
+                          "False, '€', DecimalFieldDescription(None, '.'))"),
+                         repr(self.description))
+
+
+class CurrencyIntegerFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = CurrencyIntegerFieldDescription(
+            False, "€", IntegerFieldDescription.INSTANCE)
+
+    def test_render_currency(self):
+        s = StringIO()
+        self.description.render(s)
         self.assertEqual("currency/post/€/integer", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(int, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual(("CurrencyIntegerFieldDescription("
+                          "False, '€', IntegerFieldDescription.INSTANCE)"),
+                         repr(self.description))
+
+
+class DateFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = DateFieldDescription("yyyy-MM-dd", "en_US.UTF-8")
+
+    def test_render(self):
+        s = StringIO()
+        self.description.render(s)
+        self.assertEqual("date/yyyy-MM-dd/en_US.UTF-8", s.getvalue())
+
+    def test_render_no_locale(self):
+        description = DateFieldDescription("yyyy-MM-dd")
+        s = StringIO()
+        description.render(s)
+        self.assertEqual("date/yyyy-MM-dd", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(date, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual("DateFieldDescription('yyyy-MM-dd', 'en_US.UTF-8')",
+                         repr(self.description))
+
+    def test_repr_no_locale(self):
+        description = DateFieldDescription("yyyy-MM-dd")
+        self.assertEqual("DateFieldDescription('yyyy-MM-dd')",
+                         repr(description))
+
+
+class IntegerFieldDescriptionTest(unittest.TestCase):
+    def test_type(self):
+        self.assertEqual(int, IntegerFieldDescription().get_python_type())
 
 
 if __name__ == '__main__':

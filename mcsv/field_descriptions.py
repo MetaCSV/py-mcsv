@@ -85,8 +85,8 @@ class CurrencyDecimalFieldDescription(FieldDescription[Decimal]):
 
     def render(self, out: TextIO):
         pre = none_to_empty("pre" if self._pre else "post")
-        render(out, "currency", self._currency, pre, none_to_empty(
-            self._currency))
+        currency = none_to_empty(self._currency)
+        render(out, "currency", pre, currency)
         out.write("/")
         self._decimal_description.render(out)
 
