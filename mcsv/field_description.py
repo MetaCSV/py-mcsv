@@ -45,19 +45,19 @@ class DataType(Enum):
 class FieldDescription(ABC, Generic[T]):
     @abstractmethod
     def render(self, out: TextIO):
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def to_field_processor(self, null_value: str) -> FieldProcessor[T]:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_data_type(self) -> DataType:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_python_type(self) -> Type:
-        pass
+        pass  # pragma: no cover
 
     def __str__(self) -> str:
         o = StringIO()

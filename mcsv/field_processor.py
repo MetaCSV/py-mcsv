@@ -25,8 +25,8 @@ from mcsv.util import T
 class FieldProcessor(Generic[T]):
     @abstractmethod
     def to_object(self, text: str) -> Optional[T]:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def to_string(self, value: Optional[T]) -> str:
-        pass
+        pass  # pragma: no cover
