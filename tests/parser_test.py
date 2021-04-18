@@ -28,8 +28,7 @@ from mcsv.field_description import FieldDescription, DataType
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.field_processor import FieldProcessor
 from mcsv.field_processors import text_or_none, ReadError
-from mcsv.reader import open_dict_csv_reader, MetaCSVReader, \
-    MetaCSVReaderFactory
+from mcsv.reader import open_dict_csv_reader
 from mcsv.util import T, render
 
 
@@ -39,7 +38,7 @@ class ParserTest(unittest.TestCase):
                                   self._get_fixture("meta_csv.mcsv")) as reader:
             self.assertEqual({'domain': DataType.TEXT, 'key': DataType.TEXT,
                               'value': DataType.TEXT},
-                             reader.get_types())
+                             reader.get_data_types())
             self.assertEqual(
                 {'domain': 'file', 'key': 'encoding', 'value': 'utf-8'},
                 next(reader))
@@ -64,7 +63,7 @@ class ParserTest(unittest.TestCase):
                 'voie_nom_eu': DataType.TEXT,
                 'x': DataType.FLOAT,
                 'y': DataType.FLOAT
-            }, reader.get_types())
+            }, reader.get_data_types())
             self.assertEqual(
                 {'cle_interop': '64214_0010_00700',
                  'commune_nom': 'Espès-undurein',
@@ -109,7 +108,7 @@ class ParserTest(unittest.TestCase):
                 return urlparse(text)
 
             def to_string(self, value: Optional[ParseResult]) -> str:
-                value.geturl()
+                return value.geturl()
 
         class URLFieldDescription(FieldDescription[ParseResult]):
             def render(self, out: TextIO):
@@ -158,7 +157,7 @@ class ParserTest(unittest.TestCase):
                     'a text': DataType.TEXT,
                     'an URL': DataType.OBJECT,
                 },
-                    reader.get_types())
+                    reader.get_data_types())
                 self.assertEqual(
                     {'a boolean': True,
                      'a currency': 5,

@@ -95,8 +95,12 @@ class MetaCSVDictReader(Iterator[Mapping[str, Any]]):
                 d = dict(zip(self.header, self._func(row)))
             return d
 
-    def get_types(self) -> Mapping[str, DataType]:
+    def get_data_types(self) -> Mapping[str, DataType]:
         return {col: d.get_data_type() for col, d in
+                zip(self.header, self._descriptions)}
+
+    def get_python_types(self) -> Mapping[str, DataType]:
+        return {col: d.get_python_type() for col, d in
                 zip(self.header, self._descriptions)}
 
 
