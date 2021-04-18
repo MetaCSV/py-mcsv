@@ -37,7 +37,7 @@ class ColTypeParser:
                 return TextFieldDescription.INSTANCE
         self._create_object_description = create_object_description
 
-    def parse_col_type(self, value):
+    def parse_col_type(self, value: str) -> FieldDescription:
         datatype, *parameters = split_parameters(value)
         if datatype == "boolean":
             description = self.parse_data_bool_row(parameters)

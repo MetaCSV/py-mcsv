@@ -82,7 +82,6 @@ class MetaCSVParser:
                 unescape_line_terminator(value))
         else:
             raise ValueError(f"Unknown file domain key: {key}")
-        pass
 
     def _parse_csv_row(self, key, value):
         if key == "delimiter":
