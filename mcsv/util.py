@@ -19,6 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import csv
 from contextlib import contextmanager
+from decimal import Decimal
 from io import TextIOBase, IOBase, TextIOWrapper
 from locale import getlocale, LC_TIME, setlocale
 from pathlib import Path
@@ -41,7 +42,7 @@ def split_parameters(parameters):
     backslash = False
     cur = ""
     for j, c in enumerate(parameters):
-        if j < start:
+        if j < start:  # never happens
             pass
         elif c == "\\":
             backslash = True
@@ -86,7 +87,8 @@ def none_to_empty(value):
     return "" if value is None else value
 
 
-def format_decimal(value, thousand_separator, decimal_separator):
+def format_decimal(value: Decimal, thousand_separator: str,
+                   decimal_separator: str) -> str:
     """
     >>> from decimal import Decimal
     >>> format_decimal(Decimal("-12345678"), "~", ";")
@@ -150,9 +152,13 @@ def format_integer(value, thousand_separator):
     text = str(value)
     size = len(text)
     if value < 0:
-        i = (size - 1) % 3 + 1
+        start = 1
     else:
-        i = size % 3
+        start = 0
+
+    i = (size - start) % 3 + start
+    if i == start:
+        i += 3
     s = text[0:i]
     while i < size:
         s += thousand_separator + text[i:i + 3]
@@ -193,7 +199,7 @@ RFC4180_DIALECT = rfc4180_dialect()
 csv.register_dialect("RFC4180_DIALECT", RFC4180_DIALECT)
 
 
-def to_meta_path(path):
+def to_meta_path(path: Union[str, Path]) -> Path:
     if isinstance(path, Path):
         pass
     elif isinstance(path, str):
@@ -224,12 +230,6 @@ def open_file_like(file: FileLike, mode: str = "r",
         yield TextIOWrapper(file, encoding=encoding)
     else:
         raise ValueError(file)
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
 
 
 def escape_line_terminator(lt):

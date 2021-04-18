@@ -20,9 +20,11 @@
 
 import unittest
 from io import StringIO
+from pathlib import Path
 
 from mcsv.util import split_parameters, escape_line_terminator, \
-    unescape_line_terminator, render
+    unescape_line_terminator, render, render_escaped, format_decimal, \
+    format_integer, to_meta_path, open_file_like
 
 
 class UtilTest(unittest.TestCase):
@@ -70,6 +72,72 @@ class UtilTest(unittest.TestCase):
         s = StringIO()
         render(s, "", "", "")
         self.assertEqual("", s.getvalue())
+
+    def test_split(self):
+        self.assertEqual(["foo", "bar"],
+                         split_parameters("foo/bar"))
+
+    def test_split_empty_parameter(self):
+        self.assertEqual(["foo", "", "bar"],
+                         split_parameters("foo//bar"))
+
+    def test_split_one(self):
+        self.assertEqual(["foo"],
+                         split_parameters("foo"))
+
+    def test_split_zero(self):
+        self.assertEqual([""],
+                         split_parameters(""))
+
+    def test_render_escaped(self):
+        s = StringIO()
+        render_escaped(s, "a / and a \\ ")
+        self.assertEqual("a \\/ and a \\\\ ", s.getvalue())
+
+    def test_format_decimal(self):
+        self.assertEqual("123456.789", format_decimal(123456.789, None, None))
+
+    def test_format_decimal_th_sep_dec_sep(self):
+        self.assertEqual("123~456,789", format_decimal(123456.789, "~", ","))
+
+    def test_format_decimal_th_sep(self):
+        self.assertEqual("123~456", format_decimal(123456, "~", None))
+
+    def test_format_int_th_sep(self):
+        self.assertEqual("1", format_integer(1, "~"))
+        self.assertEqual("12", format_integer(12, "~"))
+        self.assertEqual("123", format_integer(123, "~"))
+        self.assertEqual("1~234", format_integer(1234, "~"))
+        self.assertEqual("12~345", format_integer(12345, "~"))
+        self.assertEqual("123~456", format_integer(123456, "~"))
+        self.assertEqual("1~234~567", format_integer(1234567, "~"))
+
+    def test_format_neg_int_th_sep(self):
+        self.assertEqual("-1", format_integer(-1, "~"))
+        self.assertEqual("-12", format_integer(-12, "~"))
+        self.assertEqual("-123", format_integer(-123, "~"))
+        self.assertEqual("-1~234", format_integer(-1234, "~"))
+        self.assertEqual("-12~345", format_integer(-12345, "~"))
+        self.assertEqual("-123~456", format_integer(-123456, "~"))
+        self.assertEqual("-1~234~567", format_integer(-1234567, "~"))
+
+    def test_to_meta_path(self):
+        self.assertEqual(Path("foo.mcsv"), to_meta_path("foo.csv"))
+        self.assertEqual(Path("foo.mcsv"), to_meta_path(Path("foo.csv")))
+
+    def test_to_meta_path_err(self):
+        with self.assertRaises(ValueError):
+            to_meta_path(1)
+
+    def test_open_file_like(self):
+        s = StringIO()
+        with open_file_like(s) as f:
+            self.assertEqual(s, f)
+
+    def test_open_file_like_err(self):
+        with self.assertRaises(ValueError):
+            with open_file_like(1):
+                pass
 
 
 if __name__ == "__main__":
