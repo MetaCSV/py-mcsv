@@ -21,10 +21,13 @@ from datetime import date, datetime
 from decimal import Decimal
 from io import StringIO
 
+from mcsv.field_description import DataType
 from mcsv.field_descriptions import IntegerFieldDescription, \
     BooleanFieldDescription, CurrencyIntegerFieldDescription, \
     CurrencyDecimalFieldDescription, DecimalFieldDescription, \
-    DateFieldDescription, DatetimeFieldDescription, FloatFieldDescription
+    DateFieldDescription, DatetimeFieldDescription, FloatFieldDescription, \
+    PercentageFloatFieldDescription, PercentageDecimalFieldDescription, \
+    TextFieldDescription, data_type_to_field_description
 
 
 class BooleanFieldDescriptionTest(unittest.TestCase):
@@ -191,6 +194,69 @@ class IntegerFieldDescriptionTest(unittest.TestCase):
 
     def test_type(self):
         self.assertEqual(int, IntegerFieldDescription().get_python_type())
+
+
+class PercentageFloatFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = PercentageFloatFieldDescription.INSTANCE
+
+    def test_render(self):
+        s = StringIO()
+        self.description.render(s)
+        self.assertEqual("percentage/post/%/float//.", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(float, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual(("PercentageFloatFieldDescription("
+                          "False, '%', FloatFieldDescription(None, '.'))"),
+                         repr(self.description))
+
+
+class PercentageDecimalFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = PercentageDecimalFieldDescription.INSTANCE
+
+    def test_render(self):
+        s = StringIO()
+        self.description.render(s)
+        self.assertEqual("percentage/post/%/decimal//.", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(Decimal, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual(("PercentageDecimalFieldDescription("
+                          "False, '%', DecimalFieldDescription(None, '.'))"),
+                         repr(self.description))
+
+
+class TextFieldDescriptionTest(unittest.TestCase):
+    def setUp(self):
+        self.description = TextFieldDescription.INSTANCE
+
+    def test_render(self):
+        s = StringIO()
+        self.description.render(s)
+        self.assertEqual("text", s.getvalue())
+
+    def test_type(self):
+        self.assertEqual(str, self.description.get_python_type())
+
+    def test_repr(self):
+        self.assertEqual("TextFieldDescription.INSTANCE",
+                         repr(self.description))
+
+
+class DataTypeToFieldDescription(unittest.TestCase):
+    def test(self):
+        self.assertEqual(TextFieldDescription.INSTANCE,
+                         data_type_to_field_description(DataType.TEXT))
+
+    def test_none(self):
+        self.assertEqual(TextFieldDescription.INSTANCE,
+                         data_type_to_field_description(None))
 
 
 if __name__ == '__main__':
