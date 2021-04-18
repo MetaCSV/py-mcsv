@@ -15,17 +15,18 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import codecs
 import unittest
 from decimal import Decimal
-from io import StringIO
+from io import StringIO, BytesIO
 
 from mcsv import MetaCSVReader
 from mcsv.field_description import DataType
 from mcsv.field_descriptions import TextFieldDescription, \
     DecimalFieldDescription, IntegerFieldDescription
+from mcsv.field_processors import MetaCSVReadException
 from mcsv.meta_csv_data import MetaCSVDataBuilder
-from mcsv.reader import MetaCSVReaderFactory
+from mcsv.reader import MetaCSVReaderFactory, open_csv_reader
 
 
 class ReaderTest(unittest.TestCase):
@@ -76,6 +77,58 @@ class DictReaderTest(unittest.TestCase):
     def test_reader_python(self):
         self.assertEqual({'a': str, 'b': Decimal, 'c': int},
                          self.reader.get_python_types())
+
+
+class OtherReaderTest(unittest.TestCase):
+    def setUp(self):
+        self.data = (MetaCSVDataBuilder()
+                     .description_by_col_index(
+            1, DecimalFieldDescription.INSTANCE)
+                     .description_by_col_index(
+            2, IntegerFieldDescription.INSTANCE)
+                     .build())
+        self.s = StringIO("a,b,c\r\n1,2,foo")
+
+    def test_reader_rows_null(self):
+        self.reader = MetaCSVReaderFactory(
+            self.data, on_error="null").reader(self.s)
+        it = iter(self.reader)
+        self.assertEqual(['a', 'b', 'c'], next(it))
+        self.assertEqual(['1', Decimal('2'), None], next(it))
+        with self.assertRaises(StopIteration):
+            next(it)
+
+    def test_reader_rows_text(self):
+        self.reader = MetaCSVReaderFactory(
+            self.data, on_error="text").reader(self.s)
+        it = iter(self.reader)
+        self.assertEqual(['a', 'b', 'c'], next(it))
+        self.assertEqual(['1', Decimal('2'), 'foo'], next(it))
+        with self.assertRaises(StopIteration):
+            next(it)
+
+    def test_reader_rows_exception(self):
+        self.reader = MetaCSVReaderFactory(
+            self.data, on_error="exception").reader(self.s)
+        it = iter(self.reader)
+        self.assertEqual(['a', 'b', 'c'], next(it))
+        with self.assertRaises(MetaCSVReadException):
+            next(it)
+        with self.assertRaises(StopIteration):
+            next(it)
+
+    def test_reader_rows_foo(self):
+        with self.assertRaises(ValueError):
+            self.reader = MetaCSVReaderFactory(
+                self.data, on_error="foo").reader(self.s)
+
+
+class OpenCSVReaderTest(unittest.TestCase):
+    def test(self):
+        csv = BytesIO(codecs.BOM_UTF8 + b"a,b,c\r\n1,2,3")
+        mcsv = BytesIO(b"domain,key,value\r\nfile,bom,true")
+        with open_csv_reader(csv, mcsv) as source:
+            self.assertEqual([['a', 'b', 'c'], ['1', '2', '3']], list(source))
 
 
 if __name__ == '__main__':

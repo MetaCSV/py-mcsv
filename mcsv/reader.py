@@ -203,7 +203,7 @@ def _open_reader(file: FileLike, meta_file: Optional[FileLike] = None,
     if meta_file is None:
         meta_file = to_meta_path(file)
     data = MetaCSVParser(meta_file, create_object_description).parse()
-    if data.encoding == "utf-8" and data.bom:
+    if data.encoding.casefold() == "utf-8" and data.bom:
         encoding = "utf-8-sig"
     else:
         encoding = data.encoding
