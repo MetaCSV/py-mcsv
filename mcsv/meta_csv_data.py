@@ -123,7 +123,7 @@ class MetaCSVDataBuilder:
         self._description_by_col_index[i] = description
         return self
 
-    def to_metadata(self):
+    def to_metadata(self) -> "MetaCSVMetaData":
         return MetaCSVMetaData(self._description_by_col_index)
 
 
