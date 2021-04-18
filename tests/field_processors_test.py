@@ -25,7 +25,7 @@ from mcsv.field_processors import (
     DateAndDatetimeFieldProcessor, ReadError, text_or_none,
     BooleanFieldProcessor, MetaCSVReadException,
     CurrencyFieldProcessor, IntegerFieldProcessor, DecimalFieldProcessor,
-    FloatFieldProcessor)
+    FloatFieldProcessor, PercentageFieldProcessor, TextFieldProcessor)
 
 
 class BooleanFieldProcessorTest(unittest.TestCase):
@@ -190,6 +190,101 @@ class FloatFieldProcessorTest(unittest.TestCase):
     def test_to_string(self):
         processor = FloatFieldProcessor(" ", ",", "NULL")
         self.assertEqual("1 234,5", processor.to_string(1234.5))
+
+
+class IntegerFieldProcessorTest(unittest.TestCase):
+    def test_to_object_none(self):
+        processor = IntegerFieldProcessor(None, "NULL")
+        self.assertIsNone(processor.to_object(None))
+
+    def test_to_object_null(self):
+        processor = IntegerFieldProcessor(None, "NULL")
+        self.assertIsNone(processor.to_object("NULL"))
+
+    def test_to_object_th_sep(self):
+        processor = IntegerFieldProcessor(" ", "NULL")
+        self.assertEqual(1234, processor.to_object("1 234"))
+
+    def test_to_object(self):
+        processor = IntegerFieldProcessor(None, "NULL")
+        self.assertEqual(1234, processor.to_object("1234"))
+
+    def test_to_object_err(self):
+        processor = IntegerFieldProcessor(" ", "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("foo")
+
+    def test_to_string_none(self):
+        processor = IntegerFieldProcessor(" ", "NULL")
+        self.assertEqual("NULL", processor.to_string(None))
+
+    def test_to_string(self):
+        processor = IntegerFieldProcessor(" ", "NULL")
+        self.assertEqual("1 234", processor.to_string(1234))
+
+
+class PercentageFieldProcessorTest(unittest.TestCase):
+    def setUp(self):
+        self.processor = PercentageFieldProcessor(
+            False, "%", FloatFieldProcessor("", ".", "NULL"), "NULL")
+
+    def test_to_object_none(self):
+        self.assertIsNone(self.processor.to_object(None))
+
+    def test_to_object_null(self):
+        self.assertIsNone(self.processor.to_object("NULL"))
+
+    def test_to_object(self):
+        self.assertEqual(0.125, self.processor.to_object("12.5%"))
+
+    def test_to_object_err(self):
+        with self.assertRaises(MetaCSVReadException):
+            self.processor.to_object("foo")
+
+    def test_to_string_none(self):
+        self.assertEqual("NULL", self.processor.to_string(None))
+
+    def test_to_string(self):
+        self.assertEqual("12.5 %", self.processor.to_string(0.125))
+
+    def test_to_object_pre(self):
+        processor = PercentageFieldProcessor(
+            True, "%", FloatFieldProcessor("", ".", "NULL"), "NULL")
+        self.assertEqual(0.125, processor.to_object("%12.5"))
+
+    def test_to_object_pre_err(self):
+        processor = PercentageFieldProcessor(
+            True, "%", FloatFieldProcessor("", ".", "NULL"), "NULL")
+        with self.assertRaises(MetaCSVReadException):
+            processor.to_object("&12.5")
+
+    def test_to_string_pre(self):
+        processor = PercentageFieldProcessor(
+            True, "%", FloatFieldProcessor("", ".", "NULL"), "NULL")
+        self.assertEqual("% 12.5", processor.to_string(0.125))
+
+
+class TextFieldProcessorTest(unittest.TestCase):
+    def setUp(self):
+        self.processor = TextFieldProcessor("NULL")
+
+    def test_to_object_none(self):
+        self.assertIsNone(self.processor.to_object(None))
+
+    def test_to_object_null(self):
+        self.assertIsNone(self.processor.to_object("NULL"))
+
+    def test_to_object_th_sep(self):
+        self.assertEqual("1234", self.processor.to_object("1234"))
+
+    def test_to_object(self):
+        self.assertEqual("1234", self.processor.to_object("1234"))
+
+    def test_to_string_none(self):
+        self.assertEqual("NULL", self.processor.to_string(None))
+
+    def test_to_string(self):
+        self.assertEqual("1234", self.processor.to_string("1234"))
 
 
 class MiscTest(unittest.TestCase):

@@ -216,18 +216,16 @@ class IntegerFieldProcessor(FieldProcessor[int]):
         self._null_value = null_value
 
     def to_object(self, text: str) -> Optional[float]:
+        text = text_or_none(text, self._null_value)
         if text is None:
             return None
-        text = text.strip().casefold()
-        if text == self._null_value:
-            return None
-        else:
-            try:
-                if self._thousand_separator:
-                    text = text.replace(self._thousand_separator, "")
-                return int(text)
-            except ValueError as e:
-                raise MetaCSVReadException(e)
+
+        try:
+            if self._thousand_separator:
+                text = text.replace(self._thousand_separator, "")
+            return int(text)
+        except ValueError as e:
+            raise MetaCSVReadException(e)
 
     def to_string(self, value: Optional[float]) -> str:
         if value is None:
@@ -242,6 +240,8 @@ class PercentageFieldProcessor(FieldProcessor[T]):
         self._sign = sign
         self._number_processor = number_processor
         self._null_value = null_value
+        self._hundred = 100.0 if isinstance(
+            self._number_processor.to_object("0"), float) else Decimal("100.0")
 
     def to_object(self, text: str) -> Optional[T]:
         text = text_or_none(text, self._null_value)
@@ -252,7 +252,7 @@ class PercentageFieldProcessor(FieldProcessor[T]):
             if text.startswith(self._sign):
                 text = text[size:].lstrip()
                 return self._number_processor.to_object(
-                    text) / self._number_processor.to_object("100.0")
+                    text) / self._hundred
             else:
                 raise MetaCSVReadException(
                     f"Missing {self._sign} currency symbol: {text}")
@@ -260,7 +260,7 @@ class PercentageFieldProcessor(FieldProcessor[T]):
             if text.endswith(self._sign):
                 text = text[:-size].lstrip()
                 return self._number_processor.to_object(
-                    text) / self._number_processor.to_object("100.0")
+                    text) / self._hundred
             else:
                 raise MetaCSVReadException(
                     f"Missing {self._sign} currency symbol: {text}")
@@ -268,7 +268,7 @@ class PercentageFieldProcessor(FieldProcessor[T]):
     def to_string(self, value: Optional[T]) -> str:
         if value is None:
             return self._null_value
-        v = self._number_processor.to_string(value)
+        v = self._number_processor.to_string(value * self._hundred)
         if self._pre:
             return f"{self._sign} {v}"
         else:
