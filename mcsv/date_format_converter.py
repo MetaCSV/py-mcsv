@@ -149,6 +149,7 @@ class _DateFormatParser:
             elif state == State.MAYBE_CLOSE_TEXT:
                 if c == "'":
                     cur += c
+                    state = State.IN_TEXT
                 else:
                     yield Token(OpCode.TEXT, cur)
                     state = State.START

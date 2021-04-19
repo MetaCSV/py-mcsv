@@ -16,7 +16,7 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from contextlib import contextmanager
-from typing import Union, Optional
+from typing import Union
 
 from .field_description import (FieldDescription, python_type_to_data_type,
                                 data_type_to_python_type)
@@ -30,28 +30,25 @@ from .writer import (MetaCSVWriter, open_csv_writer, open_dict_csv_writer,
 
 @contextmanager
 def open_csv(file: FileLike, mode: str = "r",
-             meta_file: Optional[FileLike] = None,
              *args, **kwargs) -> Union[MetaCSVReader, MetaCSVWriter]:
     if mode == "r":
-        with open_csv_reader(file, meta_file, *args, **kwargs) as reader:
+        with open_csv_reader(file, *args, **kwargs) as reader:
             yield reader
     elif mode == "w":
-        with open_csv_writer(file, *args, meta_file=meta_file,
-                             **kwargs) as writer:
+        with open_csv_writer(file, *args, **kwargs) as writer:
             yield writer
 
 
+@contextmanager
 def open_dict_csv(file: FileLike, mode: str = "r",
-                  meta_file: Optional[FileLike] = None,
                   *args, **kwargs) -> Union[MetaCSVDictReader,
                                             MetaCSVDictWriter]:
     if mode == "r":
-        with open_dict_csv_reader(file, meta_file, *args,
+        with open_dict_csv_reader(file, *args,
                                   **kwargs) as reader:
             yield reader
     elif mode == "w":
-        with open_dict_csv_writer(file, *args, meta_file=meta_file,
-                                  **kwargs) as writer:
+        with open_dict_csv_writer(file, *args, **kwargs) as writer:
             yield writer
 
 

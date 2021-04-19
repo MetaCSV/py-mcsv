@@ -86,6 +86,14 @@ class DateAndDatetimeFieldProcessorTest(unittest.TestCase):
         self.assertEqual(date(2021, 1, 12),
                          processor.to_object("2021-01-12T15:34:25.1235"))
 
+    def test_format_err(self):
+        processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
+                                                  "%Y-%M-%D",
+                                                  "fr_FR.UTF8",
+                                                  "null_value")
+        with self.assertRaises(MetaCSVReadException):
+             processor.to_object("2021-01-12T15:34:25.1235")
+
     def test_to_object_err(self):
         processor = DateAndDatetimeFieldProcessor(date.fromtimestamp,
                                                   "yyyy-MM-dd", "fr_FR.utf-8",

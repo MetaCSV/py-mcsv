@@ -20,6 +20,7 @@ import unittest
 from decimal import Decimal
 from io import StringIO, BytesIO
 
+from mcsv import open_csv, open_dict_csv
 from mcsv.field_description import DataType
 from mcsv.field_descriptions import (DecimalFieldDescription,
                                      IntegerFieldDescription)
@@ -128,6 +129,18 @@ class OpenCSVReaderTest(unittest.TestCase):
         mcsv = BytesIO(b"domain,key,value\r\nfile,bom,true")
         with open_csv_reader(csv, mcsv) as source:
             self.assertEqual([['a', 'b', 'c'], ['1', '2', '3']], list(source))
+
+    def test_open_csv(self):
+        csv = BytesIO(codecs.BOM_UTF8 + b"a,b,c\r\n1,2,3")
+        mcsv = BytesIO(b"domain,key,value\r\nfile,bom,true")
+        with open_csv(csv, "r", mcsv) as source:
+            self.assertEqual([['a', 'b', 'c'], ['1', '2', '3']], list(source))
+
+    def test_open_dict_csv(self):
+        csv = BytesIO(codecs.BOM_UTF8 + b"a,b,c\r\n1,2,3")
+        mcsv = BytesIO(b"domain,key,value\r\nfile,bom,true")
+        with open_dict_csv(csv, "r", mcsv) as source:
+            self.assertEqual([{'a': '1', 'b': '2', 'c': '3'}], list(source))
 
 
 if __name__ == '__main__':

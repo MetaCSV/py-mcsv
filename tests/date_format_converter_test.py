@@ -53,6 +53,20 @@ class DateFormatConverterTest(unittest.TestCase):
         self.assertEqual("%y%%%m%%%d",
                          _DateFormatParser.create().parse("yy%MM%dd"))
 
+    def test_create_custom_lex(self):
+        self.assertEqual("%%y%%M%%d",
+                         _DateFormatParser.create(
+                             lambda s: [Token(OpCode.TEXT, c) for c in
+                                        s]).parse("%y%M%d"))
+
+    def test_parse_in_text(self):
+        self.assertEqual("%Yfoo",
+                         _DateFormatParser.create().parse("y'foo'"))
+
+    def test_parse_in_text2(self):
+        self.assertEqual("%Yfoo'bar",
+                         _DateFormatParser.create().parse("y'foo''bar'"))
+
 
 if __name__ == '__main__':
     unittest.main()

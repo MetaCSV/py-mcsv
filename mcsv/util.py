@@ -38,13 +38,10 @@ def split_parameters(parameters):
     """
     # Avoid split("/") because of escaped slashes
     new_parameters = []
-    start = 0
     backslash = False
     cur = ""
     for j, c in enumerate(parameters):
-        if j < start:  # never happens
-            pass
-        elif c == "\\":
+        if c == "\\":
             backslash = True
         elif c == "/":
             if backslash:
@@ -53,7 +50,6 @@ def split_parameters(parameters):
             else:
                 new_parameters.append(cur)
                 cur = ""
-                start = j + 1
         else:
             if backslash:  # let's not forget the \
                 cur += "\\"

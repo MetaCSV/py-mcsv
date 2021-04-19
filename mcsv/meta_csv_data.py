@@ -61,7 +61,7 @@ class MetaCSVData:
 
         :return:
         """
-        if self.encoding == "utf-8" and self.bom:
+        if self.encoding.casefold() == "utf-8" and self.bom:
             return "utf-8-sig"
         else:
             return self.encoding

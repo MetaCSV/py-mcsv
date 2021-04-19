@@ -20,10 +20,12 @@ import unittest
 from decimal import Decimal
 from io import StringIO, BytesIO
 
+from mcsv import open_csv, open_dict_csv
 from mcsv.field_descriptions import DecimalFieldDescription, \
     IntegerFieldDescription
 from mcsv.meta_csv_data import MetaCSVDataBuilder
-from mcsv.writer import MetaCSVWriterFactory, open_csv_writer
+from mcsv.writer import MetaCSVWriterFactory, open_csv_writer, \
+    open_dict_csv_writer
 
 
 class WriterTest(unittest.TestCase):
@@ -45,6 +47,7 @@ class WriterTest(unittest.TestCase):
                 .description_by_col_index(2, IntegerFieldDescription.INSTANCE)
                 .build())
         w = MetaCSVWriterFactory(data).dict_writer(s, ['a', 'b', 'c'])
+        w.writeheader()
         w.writerow({'a': '1', 'b': Decimal('2.0'), 'c': 3})
         self.assertEqual(['a,b,c', '1,2.0,3', ''], s.getvalue().split("\r\n"))
 
@@ -66,8 +69,61 @@ class WriterTest(unittest.TestCase):
                               b'data,col/1/type,decimal//.\r\n'
                               b'data,col/2/type,integer\r\n'), ms.getvalue())
 
+        self.assertEqual(b'\xef\xbb\xbfa,b,c\r\n1,2.0,3\r\n', s.getvalue())
+
+    def test_open_dict_writer(self):
+        s = BytesIO()
+        ms = BytesIO()
+        data = (MetaCSVDataBuilder()
+                .description_by_col_index(1, DecimalFieldDescription.INSTANCE)
+                .description_by_col_index(2, IntegerFieldDescription.INSTANCE)
+                .build())
+        with open_dict_csv_writer(s, ['a', 'b', 'c'], data, ms) as w:
+            w.writeheader()
+            w.writerow({'a': '1', 'b': Decimal('2.0'), 'c': 3})
+            # see https://stackoverflow.com/questions/48434423/
+            # why-is-textiowrapper-closing-the-given-bytesio-stream
+            self.assertEqual((b'domain,key,delimiter\r\n'
+                              b'data,col/1/type,decimal//.\r\n'
+                              b'data,col/2/type,integer\r\n'), ms.getvalue())
+
         self.assertEqual(b'a,b,c\r\n1,2.0,3\r\n', s.getvalue())
 
+    def test_open_csv(self):
+        s = BytesIO()
+        ms = BytesIO()
+        data = (MetaCSVDataBuilder()
+                .description_by_col_index(1, DecimalFieldDescription.INSTANCE)
+                .description_by_col_index(2, IntegerFieldDescription.INSTANCE)
+                .build())
+        with open_csv(s, "w", data, ms) as w:
+            w.writeheader(['a', 'b', 'c'])
+            w.writerow(['1', Decimal('2.0'), 3])
+            # see https://stackoverflow.com/questions/48434423/
+            # why-is-textiowrapper-closing-the-given-bytesio-stream
+            self.assertEqual((b'domain,key,delimiter\r\n'
+                              b'data,col/1/type,decimal//.\r\n'
+                              b'data,col/2/type,integer\r\n'), ms.getvalue())
+
+        self.assertEqual(b'a,b,c\r\n1,2.0,3\r\n', s.getvalue())
+
+    def test_open_dict_csv(self):
+        s = BytesIO()
+        ms = BytesIO()
+        data = (MetaCSVDataBuilder()
+                .description_by_col_index(1, DecimalFieldDescription.INSTANCE)
+                .description_by_col_index(2, IntegerFieldDescription.INSTANCE)
+                .build())
+        with open_dict_csv(s, "w", ['a', 'b', 'c'], data, ms) as w:
+            w.writeheader()
+            w.writerow({'a': '1', 'b': Decimal('2.0'), 'c': 3})
+            # see https://stackoverflow.com/questions/48434423/
+            # why-is-textiowrapper-closing-the-given-bytesio-stream
+            self.assertEqual((b'domain,key,delimiter\r\n'
+                              b'data,col/1/type,decimal//.\r\n'
+                              b'data,col/2/type,integer\r\n'), ms.getvalue())
+
+        self.assertEqual(b'a,b,c\r\n1,2.0,3\r\n', s.getvalue())
 
 if __name__ == '__main__':
     unittest.main()

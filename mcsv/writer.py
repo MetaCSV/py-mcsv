@@ -43,6 +43,8 @@ class MetaCSVDictWriter:
                  map_row: Callable[[Mapping[str, Any]], Mapping[str, str]]):
         self._writer = writer
         self._map_row = map_row
+
+    def writeheader(self):
         self._writer.writeheader()
 
     def writerow(self, row: Mapping[str, Any]):
