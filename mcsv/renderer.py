@@ -18,7 +18,7 @@
 
 import csv
 from contextlib import contextmanager
-from typing import TextIO
+from typing import TextIO, Iterator
 
 from mcsv.field_descriptions import TextFieldDescription
 from mcsv.meta_csv_data import MetaCSVData
@@ -45,7 +45,6 @@ class MetaCSVRenderer:
     def _write_minimal(self, data: MetaCSVData):
         self._writer.writerow(["domain", "key", "delimiter"])
         if data.encoding.casefold() == "utf-8-sig":
-            self._writer.writerow(["file", "encoding", "utf-8"])
             self._writer.writerow(["file", "bom", "true"])
         elif data.encoding.casefold() != "utf-8":
             self._writer.writerow(["file", "encoding", data.encoding])
@@ -59,8 +58,7 @@ class MetaCSVRenderer:
         if data.dialect.delimiter != ",":
             self._writer.writerow(["csv", "delimiter", data.dialect.delimiter])
         if not data.dialect.doublequote:
-            self._writer.writerow(["csv", "double_quote", str(
-                bool(data.dialect.skipinitialspace)).lower()])
+            self._writer.writerow(["csv", "double_quote", "false"])
         if data.dialect.escapechar:
             self._writer.writerow(
                 ["csv", "escape_char", data.dialect.escapechar])
@@ -77,7 +75,12 @@ class MetaCSVRenderer:
 
     def _write_verbose(self, data: MetaCSVData):
         self._writer.writerow(["domain", "key", "delimiter"])
-        self._writer.writerow(["file", "encoding", data.encoding])
+        if data.encoding.casefold() == "utf-8-sig":
+            self._writer.writerow(["file", "encoding", "utf-8"])
+            self._writer.writerow(["file", "bom", "true"])
+        else:
+            self._writer.writerow(["file", "encoding", data.encoding])
+            self._writer.writerow(["file", "bom", str(data.bom).lower()])
         self._writer.writerow(
             ["file", "line_terminator", escape_line_terminator(
                 data.dialect.lineterminator)])
@@ -93,6 +96,7 @@ class MetaCSVRenderer:
 
 
 @contextmanager
-def open_renderer(file: FileLike, minimal: bool = True):
+def open_renderer(file: FileLike, minimal: bool = True
+                  ) -> Iterator[MetaCSVRenderer]:
     with open_file_like(file, "w", encoding="utf-8", newline="") as dest:
-        return MetaCSVRenderer.create(dest, minimal)
+        yield MetaCSVRenderer.create(dest, minimal)
