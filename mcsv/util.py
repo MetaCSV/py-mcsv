@@ -226,8 +226,13 @@ def open_file_like(file: FileLike, mode: str = "r",
             yield f
     elif isinstance(file, (TextIO, TextIOBase)):
         yield file
+        if not file.closed:
+            file.flush()
     elif isinstance(file, (BinaryIO, IOBase)):
-        yield TextIOWrapper(file, encoding=encoding)
+        ret = TextIOWrapper(file, encoding=encoding)
+        yield ret
+        if not ret.closed:
+            ret.flush()
     else:
         raise ValueError(file)
 

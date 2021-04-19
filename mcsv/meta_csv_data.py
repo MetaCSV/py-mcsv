@@ -56,6 +56,16 @@ class MetaCSVData:
         self.null_value = null_value
         self.field_description_by_index = field_description_by_index
 
+    def wrap_encoding(self) -> str:
+        """
+
+        :return:
+        """
+        if self.encoding == "utf-8" and self.bom:
+            return "utf-8-sig"
+        else:
+            return self.encoding
+
 
 class MetaCSVDataBuilder:
     def __init__(self):

@@ -20,10 +20,9 @@ import unittest
 from decimal import Decimal
 from io import StringIO, BytesIO
 
-from mcsv import MetaCSVReader
 from mcsv.field_description import DataType
-from mcsv.field_descriptions import TextFieldDescription, \
-    DecimalFieldDescription, IntegerFieldDescription
+from mcsv.field_descriptions import (DecimalFieldDescription,
+                                     IntegerFieldDescription)
 from mcsv.field_processors import MetaCSVReadException
 from mcsv.meta_csv_data import MetaCSVDataBuilder
 from mcsv.reader import MetaCSVReaderFactory, open_csv_reader
